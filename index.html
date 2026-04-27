@@ -1783,6 +1783,31 @@ window.addEventListener('scroll', ()=>{
 const _origShowTab4=showTab;
 showTab=function(tab,btn){_origShowTab4(tab,btn);if(tab==='plano')initPlanoTab();};
 
+
+function filterVisitas(){
+  const fm = document.getElementById('vis-filter-mes')?.value||'';
+  const fc = document.getElementById('vis-filter-cat')?.value||'';
+  if(!selectedTransp) return;
+  const cnt = document.getElementById('vis-filter-count');
+  const t = selectedTransp;
+  const tvs = visitas.filter(v=>{
+    if(v.transp!==t) return false;
+    if(fm&&!(v.date||'').startsWith(fm)) return false;
+    if(fc&&v.cat!==fc) return false;
+    return true;
+  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(cnt) cnt.textContent=(fm||fc)?tvs.length+' visita(s) encontrada(s)':'';
+  const modal=document.getElementById('transp-detail-overlay');
+  if(modal&&modal.classList.contains('open')){
+    const cc_map={operacional:{icon:'🏭',bg:'#EBF3FF',color:'#1A4DB3'},comercial:{icon:'💼',bg:'#E6F7EE',color:'#006E35'},financeiro:{icon:'💰',bg:'#FFF0E6',color:'#B34400'},homologacao:{icon:'✅',bg:'#E6F7EE',color:'#006E35'},treinamento:{icon:'📚',bg:'#F3E8FF',color:'#6C3483'},outro:{icon:'📋',bg:'#F5F5F5',color:'#555'}};
+    let h='';
+    if(!tvs.length){h='<div class="v-empty"><div style="font-size:28px;margin-bottom:6px">🔍</div><div style="font-weight:800;font-size:15px">Nenhuma visita encontrada</div><p style="font-size:13px">Ajuste os filtros</p></div>';}
+    else{tvs.forEach(v=>{const cc=cc_map[v.cat]||cc_map.outro;const fotos=(v.fotos||[]).filter(Boolean);const links=(v.links||[]).filter(Boolean);h+=`<div style="background:#F5F5F5;border-radius:12px;padding:14px;margin-bottom:12px"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px"><div style="display:flex;gap:10px"><div style="width:36px;height:36px;border-radius:9px;background:${cc.bg};display:flex;align-items:center;justify-content:center;font-size:17px">${cc.icon}</div><div><div style="font-size:14px;font-weight:800;margin-bottom:4px">${esc(v.title)}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${v.date?'<span style="font-size:11px;color:#9E9E9E">📅 '+fmtDate(v.date)+'</span>':''}${v.resp?'<span style="font-size:11px;color:#9E9E9E">👤 '+esc(v.resp)+'</span>':''}</div></div></div></div>${v.notes?'<div style="font-size:13px;color:#555;line-height:1.65;white-space:pre-wrap;background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px">'+esc(v.notes)+'</div>':''}${fotos.length?'<div class="fotos-grid" style="margin-top:8px">'+fotos.map((f,fi)=>'<div class="foto-grid-item" onclick="openFoto('+JSON.stringify(fotos)+','+fi+','+JSON.stringify(v.foto_labels||[])+')"><img src="'+f+'" onerror="this.parentElement.hidden=true"><div class="foto-grid-label">'+(( v.foto_labels||[])[fi]||'Foto '+(fi+1))+'</div></div>').join('')+'</div>':''}</div>`;});}
+    document.getElementById('td-tab-visitas').innerHTML=h;
+    const nf=tvs.reduce((a,v)=>a+(v.fotos||[]).length,0);
+    document.getElementById('td-sub').textContent=tvs.length+' visita'+(tvs.length!==1?'s':'')+' · '+nf+' foto'+(nf!==1?'s':'');
+  } else { openTranspDetail(t); }
+}
 </script>
 
 <!-- ══════════════════════════════════════════════════
