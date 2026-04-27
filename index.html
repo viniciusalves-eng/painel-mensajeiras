@@ -1190,43 +1190,61 @@ function deleteNegativa(id){
 // ── INIT ─────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════
-// GESTÃO MENSAJEIRAS MODULE (restored)
+// GESTÃO MENSAJEIRAS MODULE
 // ══════════════════════════════════════════════════════
 const GA_SK  = 'vini26_gestao_acoes_v1';
 const COM_SK = 'vini26_comunicados_v1';
 gestaoAcoes  = JSON.parse(localStorage.getItem(GA_SK)  || '[]');
 comunicados  = JSON.parse(localStorage.getItem(COM_SK) || '[]');
 
-function saveGestaoAcoes(){ localStorage.setItem(GA_SK,  JSON.stringify(gestaoAcoes)); }
+function saveGestaoAcoes(){ localStorage.setItem(GA_SK, JSON.stringify(gestaoAcoes)); }
 function saveComunicados(){ localStorage.setItem(COM_SK, JSON.stringify(comunicados)); }
 function gauid(){ return 'ga'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
 
-// ── PLANO MODULE storage keys (restored) ──
 const PLANO_SK = 'vini26_planos_v1';
 planos = JSON.parse(localStorage.getItem(PLANO_SK) || '[]');
 function savePlanos(){ localStorage.setItem(PLANO_SK, JSON.stringify(planos)); }
+function puid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
+
+function showGestaoTab(tab, btn){
+  document.querySelectorAll('.gestao-tab-content').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.gestao-tab-btn').forEach(b=>b.classList.remove('active'));
+  const el = document.getElementById('gt-'+tab);
+  if(el) el.style.display='block';
+  if(btn) btn.classList.add('active');
+  if(tab==='acoes') renderGestaoAcoes();
+  if(tab==='comunicados') renderComunicados();
+}
+
+function initCatCounts(){
+  const ms = getMensajeiras();
+  const g = id => document.getElementById(id);
+  if(g('count-all'))  g('count-all').textContent  = ms.length;
+  if(g('count-prem')) g('count-prem').textContent = ms.filter(m=>m.peflex==='Premium').length;
+  if(g('count-cert')) g('count-cert').textContent = ms.filter(m=>m.peflex==='Certifcada').length;
+  if(g('count-rec'))  g('count-rec').textContent  = ms.filter(m=>m.peflex==='Recomenda').length;
+  if(g('count-fora')) g('count-fora').textContent = ms.filter(m=>m.status==='Fora landing Page').length;
+  if(g('count-des'))  g('count-des').textContent  = ms.filter(m=>m.status==='Desomologado').length;
+}
 
 // Seed comunicados
 (function(){
   if(!comunicados.find(c=>c.id==='com-validacao-automatica-1')){
-    comunicados.unshift({
-      id:'com-validacao-automatica-1',
-      title:'⚡ Validação de Performance Agora é Automática',
-      data:'2026-04-23',dest:'Todas',canal:'email',resp:'Vini',
-      texto:'Processo de validação mensal automatizado. Validação automática dos indicadores + tolerância zero. Sem retorno durante o mês vigente.',
-    });
+    comunicados.unshift({id:'com-validacao-automatica-1',title:'⚡ Validação de Performance Agora é Automática',data:'2026-04-23',dest:'Todas',canal:'email',resp:'Vini',texto:'Processo de validação mensal automatizado. Sem retorno durante o mês vigente.'});
     localStorage.setItem(COM_SK, JSON.stringify(comunicados));
   }
   if(!comunicados.find(c=>c.id==='com-condominios-sp-2025')){
-    comunicados.push({
-      id:'com-condominios-sp-2025',
-      title:'🏢 Levantamento de Condomínios Comerciais — SP',
-      data:'2026-04-27',dest:'Certificada',canal:'whatsapp',resp:'Vini',
-      texto:'Mapeamento de condomínios comerciais em 15 regiões SP com restrição de recebimento até 17h. Prazo: 27/04/2025.',
-    });
+    comunicados.push({id:'com-condominios-sp-2025',title:'🏢 Levantamento Condomínios Comerciais SP',data:'2026-04-27',dest:'Certificada',canal:'whatsapp',resp:'Vini',texto:'Mapeamento 15 regiões SP — restrição até 17h. Prazo: 27/04/2025.'});
     localStorage.setItem(COM_SK, JSON.stringify(comunicados));
   }
 })();
+
+initCatCounts();
+seedRNDVisita();
+seedOperacoes();
+updateTranspStats();
+renderMs();
+document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
 
 // ══════════════════════════════════════════════════════
 // SITE SWITCHER — Visual only, MLB/MLM separate storage
