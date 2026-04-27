@@ -1189,121 +1189,68 @@ function deleteNegativa(id){
 // ── INIT ─────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════
-// SITE MODULE — MLB / MLM (minimal, non-breaking)
+// GESTÃO MENSAJEIRAS MODULE (restored)
 // ══════════════════════════════════════════════════════
-let currentSite = localStorage.getItem('vini26_site') || 'MLB';
+const GA_SK  = 'vini26_gestao_acoes_v1';
+const COM_SK = 'vini26_comunicados_v1';
+gestaoAcoes  = JSON.parse(localStorage.getItem(GA_SK)  || '[]');
+comunicados  = JSON.parse(localStorage.getItem(COM_SK) || '[]');
+
+function saveGestaoAcoes(){ localStorage.setItem(GA_SK,  JSON.stringify(gestaoAcoes)); }
+function saveComunicados(){ localStorage.setItem(COM_SK, JSON.stringify(comunicados)); }
+function gauid(){ return 'ga'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
+
+// ── PLANO MODULE storage keys (restored) ──
+const PLANO_SK = 'vini26_planos_v1';
+planos = JSON.parse(localStorage.getItem(PLANO_SK) || '[]');
+function savePlanos(){ localStorage.setItem(PLANO_SK, JSON.stringify(planos)); }
+
+// Seed comunicados
+(function(){
+  if(!comunicados.find(c=>c.id==='com-validacao-automatica-1')){
+    comunicados.unshift({
+      id:'com-validacao-automatica-1',
+      title:'⚡ Validação de Performance Agora é Automática',
+      data:'2026-04-23',dest:'Todas',canal:'email',resp:'Vini',
+      texto:'Processo de validação mensal automatizado. Validação automática dos indicadores + tolerância zero. Sem retorno durante o mês vigente.',
+    });
+    localStorage.setItem(COM_SK, JSON.stringify(comunicados));
+  }
+  if(!comunicados.find(c=>c.id==='com-condominios-sp-2025')){
+    comunicados.push({
+      id:'com-condominios-sp-2025',
+      title:'🏢 Levantamento de Condomínios Comerciais — SP',
+      data:'2026-04-27',dest:'Certificada',canal:'whatsapp',resp:'Vini',
+      texto:'Mapeamento de condomínios comerciais em 15 regiões SP com restrição de recebimento até 17h. Prazo: 27/04/2025.',
+    });
+    localStorage.setItem(COM_SK, JSON.stringify(comunicados));
+  }
+})();
+
+// ══════════════════════════════════════════════════════
+// SITE SWITCHER — Visual only, MLB/MLM separate storage
+// ══════════════════════════════════════════════════════
+let currentSite = 'MLB';
 
 function getMensajeiras(){
-  if(currentSite === 'MLB') return MENSAJEIRAS;
-  const stored = localStorage.getItem('vini26_mensajeiras_MLM');
-  return stored ? JSON.parse(stored) : [];
-}
-function saveMensajeiras(arr){
-  if(currentSite === 'MLM') localStorage.setItem('vini26_mensajeiras_MLM', JSON.stringify(arr));
-}
-
-// Site-aware save functions (replace originals)
-const _origSaveVisitas = saveVisitas;
-function saveVisitas(){
-  localStorage.setItem('vini26_visitas_v7_' + currentSite, JSON.stringify(visitas));
-}
-function saveNegativas(){
-  localStorage.setItem('vini26_negativa_v3_' + currentSite, JSON.stringify(negativas));
-}
-function saveGestaoAcoes(){
-  localStorage.setItem('vini26_gestao_acoes_v1_' + currentSite, JSON.stringify(gestaoAcoes));
-}
-function saveComunicados(){
-  localStorage.setItem('vini26_comunicados_v1_' + currentSite, JSON.stringify(comunicados));
-}
-function savePlanos(){
-  localStorage.setItem('vini26_planos_v1_' + currentSite, JSON.stringify(planos));
-}
-function saveAgendaVisitas(){
-  localStorage.setItem('vini26_agenda_visitas_v1_' + currentSite, JSON.stringify(agendaVisitas));
+  return MENSAJEIRAS; // MLB only for now
 }
 
 function switchSite(site, btn){
-  if(currentSite === site) return;
   currentSite = site;
   localStorage.setItem('vini26_site', site);
-
-  // Update buttons
   document.querySelectorAll('.site-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-
-  // Update header
-  const header = document.querySelector('header');
   const lbl = document.getElementById('site-label');
-  if(site === 'MLM'){
-    if(header){ header.style.background='#3483FA'; header.style.borderBottomColor='#2271E0'; }
-    if(lbl) lbl.textContent = 'MLM';
+  if(lbl) lbl.textContent = site;
+  const h = document.querySelector('header');
+  if(site==='MLM'){
+    if(h){ h.style.background='#3483FA'; h.style.borderBottomColor='#2271E0'; }
   } else {
-    if(header){ header.style.background=''; header.style.borderBottomColor=''; }
-    if(lbl) lbl.textContent = 'MLB';
+    if(h){ h.style.background=''; h.style.borderBottomColor=''; }
   }
-
-  // Load site data (safe - variables already exist)
-  const sk = s => '_' + site;
-  visitas      = JSON.parse(localStorage.getItem('vini26_visitas_v7_'      + site) || '[]');
-  negativas    = JSON.parse(localStorage.getItem('vini26_negativa_v3_'     + site) || '[]');
-  gestaoAcoes  = JSON.parse(localStorage.getItem('vini26_gestao_acoes_v1_' + site) || '[]');
-  comunicados  = JSON.parse(localStorage.getItem('vini26_comunicados_v1_'  + site) || '[]');
-  planos       = JSON.parse(localStorage.getItem('vini26_planos_v1_'       + site) || '[]');
-  agendaVisitas= JSON.parse(localStorage.getItem('vini26_agenda_visitas_v1_'+site) || '[]');
-
-  // If MLB and empty, load from original keys (migration)
-  if(site === 'MLB'){
-    if(!visitas.length)      visitas      = JSON.parse(localStorage.getItem('vini26_visitas_v7')       || '[]');
-    if(!negativas.length)    negativas    = JSON.parse(localStorage.getItem('vini26_negativa_v3')      || '[]');
-    if(!gestaoAcoes.length)  gestaoAcoes  = JSON.parse(localStorage.getItem('vini26_gestao_acoes_v1')  || '[]');
-    if(!comunicados.length)  comunicados  = JSON.parse(localStorage.getItem('vini26_comunicados_v1')   || '[]');
-    if(!planos.length)       planos       = JSON.parse(localStorage.getItem('vini26_planos_v1')        || '[]');
-    if(!agendaVisitas.length)agendaVisitas= JSON.parse(localStorage.getItem('vini26_agenda_visitas_v1')|| '[]');
-  }
-
-  // Re-render active tab
-  const activeTab = document.querySelector('.page.active');
-  if(activeTab){
-    const tabId = activeTab.id.replace('tab-','');
-    if(tabId==='mensajeiras'){ initCatCounts(); renderMs(); }
-    else if(tabId==='visitas'){ updateTranspStats(); }
-    else if(tabId==='negativa'){ renderNegativa(); }
-    else if(tabId==='gestao'){
-      document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
-      document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
-      renderGestaoAcoes && renderGestaoAcoes();
-    }
-    else if(tabId==='plano'){ initPlanoTab(); }
-  }
-
-  // Botão + Mensajeira para MLM
-  const addBtn = document.getElementById('btn-add-ms');
-  if(addBtn) addBtn.style.display = site==='MLM' ? '' : 'none';
-
   showToast('Site: ' + site + ' ' + (site==='MLB'?'🇧🇷':'🇲🇽'));
 }
-
-function openAddMensajeiraMLM(){
-  if(currentSite !== 'MLM'){ showToast('Apenas no MLM'); return; }
-  const nome = prompt('Nome da mensajeira (MLM):');
-  if(!nome) return;
-  const estado = prompt('Estado/Região:') || '';
-  const ms = getMensajeiras();
-  ms.push({nome,estado,peflex:'Recomenda',status:'Ativo',proprietario:'',telefone:'',email:'',instagram:'',logo:'',frete:'',homologacao:'',premium:'',desomologacao:'',motivo:''});
-  saveMensajeiras(ms);
-  initCatCounts();
-  renderMs();
-  showToast('Mensajeira adicionada!');
-}
-
-// Apply site state on load (after a tick so DOM is ready)
-setTimeout(function(){
-  const saved = localStorage.getItem('vini26_site');
-  if(saved === 'MLM'){
-    switchSite('MLM', document.getElementById('btn-mlm'));
-  }
-}, 50);
 
 // ══════════════════════════════════════════════════════
 // AGENDA DE VISITAS MODULE
