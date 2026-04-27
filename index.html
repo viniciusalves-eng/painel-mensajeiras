@@ -1189,117 +1189,40 @@ function deleteNegativa(id){
 // ── INIT ─────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════
-// SITE MODULE — MLB / MLM
+// SITE MODULE — MLB / MLM (minimal, non-breaking)
 // ══════════════════════════════════════════════════════
 let currentSite = localStorage.getItem('vini26_site') || 'MLB';
 
-// Storage keys per site
-function getSiteKey(baseKey){ return baseKey + '_' + currentSite; }
-
-// All site-specific data
-// MLB = Brasil (existing data)
-// MLM = México (starts empty, user fills)
-
-// Site storage keys map
-const SITE_KEYS = {
-  visitas:   'vini26_visitas_v7',
-  negativa:  'vini26_negativa_v3',
-  gaAcoes:   'vini26_gestao_acoes_v1',
-  comunicados:'vini26_comunicados_v1',
-  planos:    'vini26_planos_v1',
-  agenda:    'vini26_agenda_visitas_v1',
-};
-
-
-// Pre-declarations for site module (avoid TDZ errors)
-let gestaoAcoes   = [];
-let comunicados   = [];
-let planos        = [];
-let agendaVisitas = [];
-let editingGaId   = null;
-let editingComId  = null;
-let editingAgendaId = null;
-let editingPlanoId  = null;
-let selectedPlanoTransp = null;
-
-// Load all data for current site
-function loadSiteData(){
-  const site = currentSite;
-
-  // visitas
-  const vKey = SITE_KEYS.visitas + '_' + site;
-  visitas = JSON.parse(localStorage.getItem(vKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.visitas) || '[]' : '[]'));
-
-  // negativas
-  const nKey = SITE_KEYS.negativa + '_' + site;
-  negativas = JSON.parse(localStorage.getItem(nKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.negativa) || '[]' : '[]'));
-
-  // gestao acoes
-  const gaKey = SITE_KEYS.gaAcoes + '_' + site;
-  gestaoAcoes = JSON.parse(localStorage.getItem(gaKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.gaAcoes) || '[]' : '[]'));
-
-  // comunicados
-  const cKey = SITE_KEYS.comunicados + '_' + site;
-  comunicados = JSON.parse(localStorage.getItem(cKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.comunicados) || '[]' : '[]'));
-
-  // planos
-  const pKey = SITE_KEYS.planos + '_' + site;
-  planos = JSON.parse(localStorage.getItem(pKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.planos) || '[]' : '[]'));
-
-  // agenda visitas
-  const avKey = SITE_KEYS.agenda + '_' + site;
-  agendaVisitas = JSON.parse(localStorage.getItem(avKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.agenda) || '[]' : '[]'));
-}
-
-// Save functions per site
-function saveVisitas(){
-  localStorage.setItem(SITE_KEYS.visitas + '_' + currentSite, JSON.stringify(visitas));
-}
-function saveNegativas(){
-  localStorage.setItem(SITE_KEYS.negativa + '_' + currentSite, JSON.stringify(negativas));
-}
-function saveGestaoAcoes(){
-  localStorage.setItem(SITE_KEYS.gaAcoes + '_' + currentSite, JSON.stringify(gestaoAcoes));
-}
-function saveComunicados(){
-  localStorage.setItem(SITE_KEYS.comunicados + '_' + currentSite, JSON.stringify(comunicados));
-}
-function savePlanos(){
-  localStorage.setItem(SITE_KEYS.planos + '_' + currentSite, JSON.stringify(planos));
-}
-function saveAgendaVisitas(){
-  localStorage.setItem(SITE_KEYS.agenda + '_' + currentSite, JSON.stringify(agendaVisitas));
-}
-
-// MLM Mensajeiras (México) — starts empty, user adds via modal
-// For MLB we use the existing MENSAJEIRAS array
-// For MLM we use a separate storage
 function getMensajeiras(){
   if(currentSite === 'MLB') return MENSAJEIRAS;
   const stored = localStorage.getItem('vini26_mensajeiras_MLM');
   return stored ? JSON.parse(stored) : [];
 }
 function saveMensajeiras(arr){
-  if(currentSite === 'MLM'){
-    localStorage.setItem('vini26_mensajeiras_MLM', JSON.stringify(arr));
-  }
+  if(currentSite === 'MLM') localStorage.setItem('vini26_mensajeiras_MLM', JSON.stringify(arr));
 }
 
-// TRANSP_CFG per site
-const TRANSP_CFG_MLB = {
-  ag:  {name:'AG Transporte', color:'#3483FA', icon:'🔵'},
-  ln:  {name:'Ln Flex',       color:'#00A650', icon:'🟢'},
-  gon: {name:'GONCARGAS',     color:'#FF7733', icon:'🟠'},
-  wa:  {name:'Wa Flex',       color:'#9B59B6', icon:'🟣'},
-  rnd: {name:'RND',           color:'#E8A020', icon:'🟡'},
-};
-const TRANSP_CFG_MLM = {
-  t1: {name:'Transportadora MX 1', color:'#3483FA', icon:'🔵'},
-  t2: {name:'Transportadora MX 2', color:'#00A650', icon:'🟢'},
-  t3: {name:'Transportadora MX 3', color:'#FF7733', icon:'🟠'},
-};
+// Site-aware save functions (replace originals)
+const _origSaveVisitas = saveVisitas;
+function saveVisitas(){
+  localStorage.setItem('vini26_visitas_v7_' + currentSite, JSON.stringify(visitas));
+}
+function saveNegativas(){
+  localStorage.setItem('vini26_negativa_v3_' + currentSite, JSON.stringify(negativas));
+}
+function saveGestaoAcoes(){
+  localStorage.setItem('vini26_gestao_acoes_v1_' + currentSite, JSON.stringify(gestaoAcoes));
+}
+function saveComunicados(){
+  localStorage.setItem('vini26_comunicados_v1_' + currentSite, JSON.stringify(comunicados));
+}
+function savePlanos(){
+  localStorage.setItem('vini26_planos_v1_' + currentSite, JSON.stringify(planos));
+}
+function saveAgendaVisitas(){
+  localStorage.setItem('vini26_agenda_visitas_v1_' + currentSite, JSON.stringify(agendaVisitas));
+}
 
-// Switch site
 function switchSite(site, btn){
   if(currentSite === site) return;
   currentSite = site;
@@ -1307,28 +1230,36 @@ function switchSite(site, btn){
 
   // Update buttons
   document.querySelectorAll('.site-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  if(btn) btn.classList.add('active');
 
-  // Update TRANSP_CFG
-  Object.assign(TRANSP_CFG, site==='MLB' ? TRANSP_CFG_MLB : TRANSP_CFG_MLM);
-
-  // Update subtitle
+  // Update header
+  const header = document.querySelector('header');
   const lbl = document.getElementById('site-label');
-  if(lbl) lbl.textContent = site;
+  if(site === 'MLM'){
+    if(header){ header.style.background='#3483FA'; header.style.borderBottomColor='#2271E0'; }
+    if(lbl) lbl.textContent = 'MLM';
+  } else {
+    if(header){ header.style.background=''; header.style.borderBottomColor=''; }
+    if(lbl) lbl.textContent = 'MLB';
+  }
 
-  // Update header color accent
-  document.querySelector('header').style.background = site==='MLB' ? 'var(--yellow)' : '#3483FA';
-  document.querySelector('header').style.borderBottomColor = site==='MLB' ? '#E6CF00' : '#2271E0';
-  document.querySelectorAll('.nav-btn.active').forEach(b=>b.style.color = site==='MLB' ? 'var(--blue)' : '#fff');
+  // Load site data (safe - variables already exist)
+  const sk = s => '_' + site;
+  visitas      = JSON.parse(localStorage.getItem('vini26_visitas_v7_'      + site) || '[]');
+  negativas    = JSON.parse(localStorage.getItem('vini26_negativa_v3_'     + site) || '[]');
+  gestaoAcoes  = JSON.parse(localStorage.getItem('vini26_gestao_acoes_v1_' + site) || '[]');
+  comunicados  = JSON.parse(localStorage.getItem('vini26_comunicados_v1_'  + site) || '[]');
+  planos       = JSON.parse(localStorage.getItem('vini26_planos_v1_'       + site) || '[]');
+  agendaVisitas= JSON.parse(localStorage.getItem('vini26_agenda_visitas_v1_'+site) || '[]');
 
-  // Reload all site data
-  loadSiteData();
-
-  // Re-seed if MLB
+  // If MLB and empty, load from original keys (migration)
   if(site === 'MLB'){
-    seedRNDVisita();
-    seedOperacoes();
-    seedComunicados();
+    if(!visitas.length)      visitas      = JSON.parse(localStorage.getItem('vini26_visitas_v7')       || '[]');
+    if(!negativas.length)    negativas    = JSON.parse(localStorage.getItem('vini26_negativa_v3')      || '[]');
+    if(!gestaoAcoes.length)  gestaoAcoes  = JSON.parse(localStorage.getItem('vini26_gestao_acoes_v1')  || '[]');
+    if(!comunicados.length)  comunicados  = JSON.parse(localStorage.getItem('vini26_comunicados_v1')   || '[]');
+    if(!planos.length)       planos       = JSON.parse(localStorage.getItem('vini26_planos_v1')        || '[]');
+    if(!agendaVisitas.length)agendaVisitas= JSON.parse(localStorage.getItem('vini26_agenda_visitas_v1')|| '[]');
   }
 
   // Re-render active tab
@@ -1336,822 +1267,43 @@ function switchSite(site, btn){
   if(activeTab){
     const tabId = activeTab.id.replace('tab-','');
     if(tabId==='mensajeiras'){ initCatCounts(); renderMs(); }
-    if(tabId==='visitas'){ updateTranspStats(); }
-    if(tabId==='negativa'){ renderNegativa(); }
-    if(tabId==='gestao'){
-      const activeGestao = document.querySelector('.gestao-tab-content[style*="block"]');
-      if(activeGestao?.id==='gt-acoes') renderGestaoAcoes();
-      if(activeGestao?.id==='gt-comunicados') renderComunicados();
+    else if(tabId==='visitas'){ updateTranspStats(); }
+    else if(tabId==='negativa'){ renderNegativa(); }
+    else if(tabId==='gestao'){
+      document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
+      document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+      renderGestaoAcoes && renderGestaoAcoes();
     }
-    if(tabId==='plano'){ initPlanoTab(); }
+    else if(tabId==='plano'){ initPlanoTab(); }
   }
 
-  // Re-init gestao if active
-  if(document.getElementById('tab-gestao')?.classList.contains('active')){
-    document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
-    document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
-  }
-  showToast('Site alterado para ' + site + ' 🌎');
+  // Botão + Mensajeira para MLM
+  const addBtn = document.getElementById('btn-add-ms');
+  if(addBtn) addBtn.style.display = site==='MLM' ? '' : 'none';
+
+  showToast('Site: ' + site + ' ' + (site==='MLB'?'🇧🇷':'🇲🇽'));
 }
 
-// Override original save functions to be site-aware (already done above)
-// Override initCatCounts to use getMensajeiras()
-function initCatCounts(){
-  const ms = getMensajeiras();
-  const countEl = id => document.getElementById(id);
-  if(countEl('count-all'))  countEl('count-all').textContent  = ms.length;
-  if(countEl('count-prem')) countEl('count-prem').textContent = ms.filter(m=>m.peflex==='Premium').length;
-  if(countEl('count-cert')) countEl('count-cert').textContent = ms.filter(m=>m.peflex==='Certifcada').length;
-  if(countEl('count-rec'))  countEl('count-rec').textContent  = ms.filter(m=>m.peflex==='Recomenda').length;
-  if(countEl('count-fora')) countEl('count-fora').textContent = ms.filter(m=>m.status==='Fora landing Page').length;
-  if(countEl('count-des'))  countEl('count-des').textContent  = ms.filter(m=>m.status==='Desomologado').length;
-}
-
-// Seed comunicados (called on site switch back to MLB)
-function seedComunicados(){
-  if(!comunicados.find(c=>c.id==='com-validacao-automatica-1')){
-    comunicados.unshift({
-      id:'com-validacao-automatica-1',
-      title:'⚡ Validação de Performance Agora é Automática',
-      data:'2026-04-23', dest:'Todas', canal:'email', resp:'Vini',
-      texto:'Processo de validação mensal automatizado a partir do próximo ciclo. Validação automática dos indicadores + tolerância zero. Sem retorno durante o mês vigente caso indicadores sejam corrigidos.',
-    });
-    saveComunicados();
-  }
-}
-
-// MLM — add mensajeira modal
 function openAddMensajeiraMLM(){
   if(currentSite !== 'MLM'){ showToast('Apenas no MLM'); return; }
-  // Simple prompt for now
   const nome = prompt('Nome da mensajeira (MLM):');
   if(!nome) return;
   const estado = prompt('Estado/Região:') || '';
   const ms = getMensajeiras();
-  ms.push({nome, estado, peflex:'Recomenda', status:'Ativo', proprietario:'', telefone:'', email:'', instagram:'', logo:'', frete:'', homologacao:'', premium:'', desomologacao:'', motivo:''});
+  ms.push({nome,estado,peflex:'Recomenda',status:'Ativo',proprietario:'',telefone:'',email:'',instagram:'',logo:'',frete:'',homologacao:'',premium:'',desomologacao:'',motivo:''});
   saveMensajeiras(ms);
   initCatCounts();
   renderMs();
   showToast('Mensajeira adicionada!');
 }
 
-// Init site on load - runs AFTER all modules initialized
-// Using setTimeout to ensure all DOM and variables are ready
+// Apply site state on load (after a tick so DOM is ready)
 setTimeout(function(){
-  // Only load site-specific data if site is MLM (MLB is already loaded by seeds)
-  const savedSite = localStorage.getItem('vini26_site');
-  if(savedSite && savedSite !== 'MLB'){
-    switchSite(savedSite, document.getElementById('btn-mlm'));
+  const saved = localStorage.getItem('vini26_site');
+  if(saved === 'MLM'){
+    switchSite('MLM', document.getElementById('btn-mlm'));
   }
-}, 0);
-
-initCatCounts();
-seedRNDVisita();
-seedOperacoes();
-updateTranspStats();
-renderMs();
-// Gestão é a primeira aba — inicializar sub-abas corretamente
-(function initGestaoTab(){
-  // Hide all sub-tabs
-  document.querySelectorAll('.gestao-tab-content').forEach(el=>el.style.display='none');
-  // Activate first button
-  document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>{
-    b.classList.toggle('active', i===0);
-  });
-  // Show first sub-tab (peflex)
-  const first = document.getElementById('gt-peflex');
-  if(first) first.style.display = 'block';
-})();
-
-// ══════════════════════════════════════════════════════
-// GESTÃO MENSAJEIRAS MODULE
-// ══════════════════════════════════════════════════════
-const GA_SK  = 'vini26_gestao_acoes_v1';
-const COM_SK = 'vini26_comunicados_v1';
-gestaoAcoes = JSON.parse(localStorage.getItem(GA_SK)  || '[]');
-comunicados = JSON.parse(localStorage.getItem(COM_SK) || '[]');
-
-// Seed comunicado oficial validação automática
-(function(){
-  // Seed comunicado levantamento condomínios
-  if(!comunicados.find(c=>c.id==='com-condominios-sp-2025')){
-    comunicados.push({
-      id: 'com-condominios-sp-2025',
-      title: '🏢 Levantamento de Condomínios Comerciais — SP',
-      data: '2026-04-27',
-      dest: 'Certificada',
-      canal: 'whatsapp',
-      resp: 'Vini',
-      texto: `LOGÍSTICA & OPERAÇÕES — Levantamento de Condomínios Comerciais
-
-Oi, tudo bem?
-
-Estamos mapeando condomínios comerciais nas regiões abaixo, que atualmente concentram o maior número de drivers em situação CRÍTICA em SP.
-
-📍 REGIÕES MAPEADAS:
-BR-SP-Centro | BR-SP-Sul-1 | BR-SP-Sul-3
-BR-SP-Oeste-1 | BR-SP-Oeste-2 | BR-SP-Oeste-3
-BR-SP-Leste-1 | BR-SP-Leste-3 | BR-SP-Leste-4
-BR-SP-Leste-5 | BR-SP-Norte-1 | BR-SP-Norte-2
-BR-SP-Norte-3 | BR-SP-Barueri-1 | BR-SP-Barueri-2
-
-📋 O QUE PRECISAMOS DE VOCÊS:
-Listagem dos condomínios comerciais atendidos nessas regiões, especialmente aqueles com restrição de recebimento de pacotes até as 17h00. Isso vai nos ajudar a identificar gargalos e definir ações corretivas.
-
-📌 INFORMAÇÕES NECESSÁRIAS POR CONDOMÍNIO:
-• Nome e endereço completo
-• Região / Zona
-• Horário limite de recebimento
-• Restrições operacionais adicionais
-
-⏰ Prazo de retorno: 27/04/2025
-
-Contem conosco para qualquer dúvida!
-Mercado Livre`,
-    });
-    localStorage.setItem(COM_SK, JSON.stringify(comunicados));
-  }
-
-  if(!comunicados.find(c=>c.id==='com-validacao-automatica-1')){
-    comunicados.unshift({
-      id: 'com-validacao-automatica-1',
-      title: '⚡ Validação de Performance Agora é Automática',
-      data: '2026-04-23',
-      dest: 'Todas',
-      canal: 'email',
-      resp: 'Vini',
-      texto: `MUDANÇA IMPORTANTE — Validação de Performance Agora é Automática\nA partir do próximo ciclo, o processo passa a ser 100% automatizado.\n\nComunicamos que o processo de validação mensal de performance das transportadoras será automatizado a partir da nova integração. Com isso, a verificação dos indicadores e a aplicação dos critérios ocorrerão de forma automática, sem intervenção manual, tornando o processo mais ágil, transparente e previsível.\n\n🔄 COMO FUNCIONA O NOVO FLUXO\n📅 MENSAL — Validação automática dos indicadores\n📊 ANÁLISE — Sistema verifica cumprimento + tolerância zero\n✅ CUMPRE — Mantém posição na landing + benefícios\n🚫 NÃO CUMPRE — Sai da landing pelo mês completo\n\n⚠️ O QUE MUDA NA PRÁTICA\n🔴 Se não cumprir os requisitos:\nA transportadora será removida automaticamente da landing page e perderá os benefícios de posicionamento e CX pelo mês inteiro, sem possibilidade de retorno antecipado.\n\n🟢 Para retornar no mês seguinte:\nBasta cumprir os indicadores de tolerância zero na próxima validação mensal. O retorno à landing ocorre automaticamente no início do ciclo seguinte.\n\n⚠️ Atenção: Ao contrário do modelo anterior, não haverá retorno durante o mês vigente caso os indicadores sejam corrigidos. A reativação só ocorrerá na validação do mês seguinte.\n\nLINHA DO TEMPO DO CICLO\n1. Início do mês — Validação automática\nO sistema avalia automaticamente os indicadores mensais de todas as transportadoras, incluindo os critérios de tolerância zero.\n\n2. Resultado imediato — Inclusão ou exclusão\nQuem cumpre permanece na landing page com todos os benefícios de posicionamento e CX. Quem não cumpre é removido automaticamente.\n\n3. Durante o mês — Sem retorno antecipado\nTransportadoras removidas permanecem fora pelo mês inteiro. Não é possível solicitar reativação ou retornar antes do próximo ciclo.\n\n4. Mês seguinte — Nova validação automática\nTransportadoras que estavam fora e agora cumprem os indicadores retornam automaticamente à landing no início do próximo ciclo.\n\nDúvidas? Entre em contato com o seu gerente de conta ou acesse o portal de transportadoras.\nEste comunicado é válido a partir do próximo ciclo de validação mensal.`,
-    });
-    localStorage.setItem(COM_SK, JSON.stringify(comunicados));
-  }
-})();
-
-function saveGestaoAcoes(){ localStorage.setItem(GA_SK,  JSON.stringify(gestaoAcoes)); }
-function saveComunicados(){ localStorage.setItem(COM_SK, JSON.stringify(comunicados)); }
-function gauid(){ return 'ga'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
-
-const TIPO_CFG = {
-  reuniao:    {icon:'🤝', label:'Reunião',       bg:'#EBF3FF', color:'#1A4DB3'},
-  visita:     {icon:'🚛', label:'Visita',         bg:'#E6F7EE', color:'#006E35'},
-  comunicado: {icon:'📢', label:'Comunicado',     bg:'#FFF3E8', color:'#A0522D'},
-  treinamento:{icon:'📚', label:'Treinamento',    bg:'#F3E8FF', color:'#6C3483'},
-  evento:     {icon:'🎉', label:'Evento',          bg:'#FFF8DC', color:'#8B6914'},
-  plano:      {icon:'📋', label:'Plano de ação',  bg:'#FDECEA', color:'#C0392B'},
-  outro:      {icon:'📌', label:'Outro',           bg:'#F5F5F5', color:'#555'},
-};
-
-function showGestaoTab(tab, btn){
-  document.querySelectorAll('.gestao-tab-content').forEach(el=>el.style.display='none');
-  document.querySelectorAll('.gestao-tab-btn').forEach(b=>b.classList.remove('active'));
-  const el = document.getElementById('gt-'+tab);
-  if(el) el.style.display='block';
-  btn.classList.add('active');
-  if(tab==='acoes') renderGestaoAcoes();
-  if(tab==='comunicados') renderComunicados();
-}
-
-function renderGestaoAcoes(){
-  const q  = (document.getElementById('ga-search')?.value||'').toLowerCase();
-  const ft = document.getElementById('ga-filter-tipo')?.value||'';
-  const fm = document.getElementById('ga-filter-ms')?.value||'';
-  const gaMs = document.getElementById('ga-filter-ms');
-  if(gaMs){
-    const allMs = [...new Set(gestaoAcoes.map(a=>a.ms||'').filter(Boolean))].sort();
-    const cur = gaMs.value;
-    gaMs.innerHTML = '<option value="">Todas as mensajeiras</option>';
-    allMs.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;gaMs.appendChild(o);});
-    gaMs.value = cur;
-  }
-  const filtered = gestaoAcoes.filter(a=>{
-    const mq=!q||a.title.toLowerCase().includes(q)||(a.ms||'').toLowerCase().includes(q)||(a.desc||'').toLowerCase().includes(q);
-    return mq&&(!ft||a.tipo===ft)&&(!fm||(a.ms||'').includes(fm));
-  }).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
-  if(!filtered.length){
-    document.getElementById('ga-board').innerHTML='<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #E0E0E0;color:#9E9E9E"><div style="font-size:32px;margin-bottom:8px">📋</div><div style="font-weight:800;font-size:16px">Nenhuma ação registrada ainda</div><p style="font-size:13px;margin-top:4px">Clique em "+ Nova ação" para começar</p></div>';
-    return;
-  }
-  let h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">';
-  filtered.forEach(a=>{
-    const tc=TIPO_CFG[a.tipo]||TIPO_CFG.outro;
-    h+=`<div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:12px;padding:16px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
-        <div style="display:flex;gap:8px;align-items:flex-start;flex:1">
-          <div style="width:36px;height:36px;border-radius:9px;background:${tc.bg};display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${tc.icon}</div>
-          <div><div style="font-size:14px;font-weight:800;margin-bottom:4px">${esc(a.title)}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:4px">
-              <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${tc.bg};color:${tc.color}">${tc.label}</span>
-              ${a.data?'<span style="font-size:11px;color:#9E9E9E">📅 '+fmtDate(a.data)+'</span>':''}
-              ${a.resp?'<span style="font-size:11px;color:#9E9E9E">👤 '+esc(a.resp)+'</span>':''}
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;gap:3px;flex-shrink:0">
-          <button onclick="openGestaoAcao('${a.id}')" style="background:#F0F0F0;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px">✎</button>
-          <button onclick="deleteGestaoAcao('${a.id}')" style="background:#FDECEA;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px;color:#C0392B">✕</button>
-        </div>
-      </div>
-      ${a.ms?'<div style="font-size:12px;color:#666;margin-bottom:6px">🚛 '+esc(a.ms)+'</div>':''}
-      ${a.desc?'<div style="font-size:12px;color:#555;line-height:1.55;background:#F5F5F5;border-radius:8px;padding:8px 10px;margin-bottom:6px">'+esc(a.desc).substring(0,140)+(a.desc.length>140?'…':'')+'</div>':''}
-      ${a.link?'<a href="'+a.link+'" target="_blank" style="font-size:11px;color:#3483FA;text-decoration:none">🔗 Ver material</a>':''}
-    </div>`;
-  });
-  h+='</div>';
-  document.getElementById('ga-board').innerHTML=h;
-}
-
-function openGestaoAcao(id){
-  editingGaId=id;
-  const a=id?gestaoAcoes.find(x=>x.id===id):null;
-  document.getElementById('ga-form-title').textContent=id?'Editar Ação':'Nova Ação de Gestão';
-  document.getElementById('ga-title').value=a?a.title:'';
-  document.getElementById('ga-tipo').value=a?a.tipo:'reuniao';
-  document.getElementById('ga-data').value=a?(a.data||today):today;
-  document.getElementById('ga-ms').value=a?(a.ms||''):'';
-  document.getElementById('ga-desc').value=a?(a.desc||''):'';
-  document.getElementById('ga-link').value=a?(a.link||''):'';
-  document.getElementById('ga-resp').value=a?(a.resp||''):'';
-  document.getElementById('ga-form-overlay').classList.add('open');
-}
-function closeGestaoAcao(){ document.getElementById('ga-form-overlay').classList.remove('open'); editingGaId=null; }
-function saveGestaoAcao(){
-  const title=document.getElementById('ga-title').value.trim();
-  if(!title){alert('Preencha o título.');return;}
-  const obj={id:editingGaId||gauid(),title,tipo:document.getElementById('ga-tipo').value,data:document.getElementById('ga-data').value,ms:document.getElementById('ga-ms').value.trim(),desc:document.getElementById('ga-desc').value.trim(),link:document.getElementById('ga-link').value.trim(),resp:document.getElementById('ga-resp').value.trim()};
-  if(editingGaId){const i=gestaoAcoes.findIndex(x=>x.id===editingGaId);gestaoAcoes[i]=obj;}
-  else gestaoAcoes.unshift(obj);
-  saveGestaoAcoes();closeGestaoAcao();renderGestaoAcoes();showToast('Ação salva!');
-}
-function deleteGestaoAcao(id){
-  if(!confirm('Excluir esta ação?'))return;
-  gestaoAcoes=gestaoAcoes.filter(x=>x.id!==id);
-  saveGestaoAcoes();renderGestaoAcoes();showToast('Removida');
-}
-
-function renderComunicados(){
-  const q=(document.getElementById('com-search')?.value||'').toLowerCase();
-  const fd=document.getElementById('com-filter')?.value||'';
-  const filtered=comunicados.filter(c=>(!q||c.title.toLowerCase().includes(q)||(c.texto||'').toLowerCase().includes(q))&&(!fd||c.dest===fd)).sort((a,b)=>(b.data||'').localeCompare(a.data||''));
-  if(!filtered.length){
-    document.getElementById('com-board').innerHTML='<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #E0E0E0;color:#9E9E9E"><div style="font-size:32px;margin-bottom:8px">📢</div><div style="font-weight:800;font-size:16px">Nenhum comunicado registrado</div></div>';
-    return;
-  }
-  const CANAL_ICON={whatsapp:'📱',email:'✉️',slack:'💬',outro:'📌'};
-  const DEST_CFG={'Todas':{bg:'#F5F5F5',color:'#555',label:'📢 Todas'},'Premium':{bg:'#FFF3E8',color:'#A0522D',label:'⭐ Premium'},'Certificada':{bg:'#E6F7EE',color:'#006E35',label:'✅ Certificadas'},'Recomenda':{bg:'#EBF3FF',color:'#1A4DB3',label:'👍 Recomendadas'}};
-  let h='<div style="display:flex;flex-direction:column;gap:10px">';
-  filtered.forEach(c=>{
-    const dc=DEST_CFG[c.dest]||DEST_CFG['Todas'];
-    h+=`<div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:12px;padding:16px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
-        <div><div style="font-size:14px;font-weight:800;margin-bottom:5px">${esc(c.title)}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px">
-            <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${dc.bg};color:${dc.color}">${dc.label}</span>
-            ${c.data?'<span style="font-size:11px;color:#9E9E9E">📅 '+fmtDate(c.data)+'</span>':''}
-            ${c.canal?'<span style="font-size:11px;color:#9E9E9E">'+(CANAL_ICON[c.canal]||'📌')+' '+c.canal+'</span>':''}
-            ${c.resp?'<span style="font-size:11px;color:#9E9E9E">👤 '+esc(c.resp)+'</span>':''}
-          </div>
-        </div>
-        <div style="display:flex;gap:3px">
-          <button onclick="openComunicado('${c.id}')" style="background:#F0F0F0;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px">✎</button>
-          <button onclick="deleteComunicado('${c.id}')" style="background:#FDECEA;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px;color:#C0392B">✕</button>
-        </div>
-      </div>
-      ${c.texto?'<div style="font-size:13px;color:#555;line-height:1.65;background:#F5F5F5;border-radius:8px;padding:10px 12px;white-space:pre-wrap">'+esc(c.texto)+'</div>':''}
-    </div>`;
-  });
-  h+='</div>';
-  document.getElementById('com-board').innerHTML=h;
-}
-
-function openComunicado(id){
-  editingComId=id;
-  const c=id?comunicados.find(x=>x.id===id):null;
-  document.getElementById('com-form-title').textContent=id?'Editar Comunicado':'Novo Comunicado';
-  document.getElementById('com-title').value=c?c.title:'';
-  document.getElementById('com-data').value=c?(c.data||today):today;
-  document.getElementById('com-dest').value=c?(c.dest||'Todas'):'Todas';
-  document.getElementById('com-texto').value=c?(c.texto||''):'';
-  document.getElementById('com-canal').value=c?(c.canal||'whatsapp'):'whatsapp';
-  document.getElementById('com-resp').value=c?(c.resp||''):'';
-  document.getElementById('com-form-overlay').classList.add('open');
-}
-function closeComunicado(){ document.getElementById('com-form-overlay').classList.remove('open'); editingComId=null; }
-function saveComunicado(){
-  const title=document.getElementById('com-title').value.trim();
-  if(!title){alert('Preencha o título.');return;}
-  const obj={id:editingComId||gauid(),title,data:document.getElementById('com-data').value,dest:document.getElementById('com-dest').value,texto:document.getElementById('com-texto').value.trim(),canal:document.getElementById('com-canal').value,resp:document.getElementById('com-resp').value.trim()};
-  if(editingComId){const i=comunicados.findIndex(x=>x.id===editingComId);comunicados[i]=obj;}
-  else comunicados.unshift(obj);
-  saveComunicados();closeComunicado();renderComunicados();showToast('Comunicado salvo!');
-}
-function deleteComunicado(id){
-  if(!confirm('Excluir este comunicado?'))return;
-  comunicados=comunicados.filter(x=>x.id!==id);
-  saveComunicados();renderComunicados();showToast('Removido');
-}
-
-// Extend showTab for gestao
-const _origShowTab2 = showTab;
-showTab = function(tab, btn){
-  _origShowTab2(tab, btn);
-  if(tab==='gestao'){
-    document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
-    document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
-  }
-};
-
-
-
-// ══════════════════════════════════════════════════════
-// PLANO DE AÇÃO MODULE
-// ══════════════════════════════════════════════════════
-const PLANO_SK = 'vini26_planos_v1';
-planos = JSON.parse(localStorage.getItem(PLANO_SK) || '[]');
-
-
-function savePlanos(){ localStorage.setItem(PLANO_SK, JSON.stringify(planos)); }
-function puid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
-
-const PLANO_TRANSP_CFG = {
-  j3:       {name:'J3 Flex',        color:'#3483FA', icon:'🔵', peflex:'Premium'},
-  tm:       {name:'TM Logística',   color:'#A0522D', icon:'⭐', peflex:'Premium'},
-  flexboys: {name:'Flexboys',       color:'#E8A020', icon:'🟡', peflex:'Premium'},
-  vitom:    {name:'Vitom Log',      color:'#9B59B6', icon:'🟣', peflex:'Premium'},
-  bibi:     {name:'Bibi Flex',      color:'#00A650', icon:'🟢', peflex:'Certificada'},
-  sonic:    {name:'Sonic',          color:'#FF7733', icon:'🟠', peflex:'Certificada'},
-  sos:      {name:'SOS Entregas',   color:'#3483FA', icon:'🔵', peflex:'Certificada'},
-  pex:      {name:'Pex',            color:'#00A650', icon:'🟢', peflex:'Certificada'},
-  nobres:   {name:'Nobres Entregas',color:'#E8A020', icon:'🟡', peflex:'Certificada'},
-  m10:      {name:'M10',            color:'#9B59B6', icon:'🟣', peflex:'Certificada'},
-  kaixinhas:{name:'Kaixinhas',      color:'#00A650', icon:'🟢', peflex:'Certificada'},
-  cwb:      {name:'CWB Same Day',   color:'#3483FA', icon:'🔵', peflex:'Certificada'},
-  attitude: {name:'Attitude',       color:'#FF7733', icon:'🟠', peflex:'Certificada'},
-  transmoto:{name:'Transmoto',      color:'#E8A020', icon:'🟡', peflex:'Certificada'},
-  mineiro:  {name:'Mineiro Express',  color:'#C0392B', icon:'🔴', peflex:'Certificada'},
-  outra:    {name:'Outra',          color:'#9E9E9E', icon:'📦', peflex:''},
-};
-const PSTATUS_CFG = {
-  ofensora:{icon:'🔴',label:'Ofensora',bg:'#FDECEA',color:'#C0392B'},
-  atencao: {icon:'🟡',label:'Atenção', bg:'#FFF8DC',color:'#8B6914'},
-  ok:      {icon:'🟢',label:'OK',      bg:'#E6F7EE',color:'#006E35'},
-};
-
-(function seedJ3(){
-  if(planos.find(p=>p.id==='j3-plano-semana-abril-2026')) return;
-  const imgEl = document.getElementById('j3-plano-img');
-  const imgData = imgEl ? JSON.parse(imgEl.textContent) : '';
-  planos.unshift({
-    id:'j3-plano-semana-abril-2026', transp:'j3', semana:'2026-W17',
-    sla:'97,56%', meta:'99%', var:'+0,44%', status:'ofensora',
-    problemas:`Queda de SLA - Alto volume e saída tardia das rotas impactando prazos\nPerformance Não Esperado - Distância elevada e atraso no início das operações\nRastreabilidade - Inconsistências no processo de baixa afetando SLA\nFalha de integração sistêmica - Falhas na integração com TMS gerando atrasos\nOscilação de performance - Falta de padrão operacional entre regiões/dias`,
-    acoes:`Queda de SLA | Antecipação de rotas críticas e ajuste de separação | Torre de Controle | Imediato\nPerformance Não Esperado | Priorização de carregamento e reforço operacional | Operação | Dois dias\nRastreabilidade | Treinamento + auditorias diárias | Qualidade/Base | Três dias\nFalha de integração sistêmica | Monitoramento em tempo real + atuação rápida | SAC/Torre D.Controle | Imediato\nOscilação de performance | Padronização + acompanhamento diário | Gestão Operacional | 5 Dias`,
-    img: imgData,
-    obs:'Média Total Da J3: 97,26% | Apresentado na reunião semanal de ofensoras.',
-    resp:'Vini',
-  });
-  localStorage.setItem(PLANO_SK, JSON.stringify(planos));
-})();
-
-// Seed Mineiro Express plano
-(function seedMineiro(){
-  if(planos.find(p=>p.id==='mineiro-plano-abril-2026')) return;
-  planos.push({
-    id:'mineiro-plano-abril-2026',
-    transp:'mineiro',
-    semana:'2026-W17',
-    sla:'',
-    meta:'98%',
-    var:'',
-    status:'ofensora',
-    problemas:`Oscilação operacional com quedas fortes (principalmente semana 12) — média abaixo do ideal
-Volume alto derruba SLA: quando envios chegam a 2K, performance cai (falta capacidade ou má distribuição)
-Roteirização ineficiente: rotas mal distribuídas causam atrasos
-Falta de disciplina no horário de corte
-Controle de SLA feito só no fechamento do dia (tarde demais)`,
-    acoes:`Corte rígido | Definir cut-off fixo (ex: 12h). Pedidos após o corte = D+1 automaticamente | Operação | Imediato
-Separação antecipada | Criar ondas: 10h primeira triagem / 12h fechamento. Rotas meio prontas antes da saída | Operação | 2 dias
-Roteirização inteligente | Limite de 25-30 pacotes por moto. Agrupar por CEP/região real. Separar rotas críticas | Torre de Controle | 3 dias
-Gestão por entregador | Ranking diário: SLA individual + % insucesso. Quem fica abaixo de 95% perde rota boa | Gestão | 1 semana
-Moto coringa (contingência) | 1-2 motos de resgate ativadas às 16h para redistribuir pacotes atrasados | Operação | Imediato
-Controle em tempo real | Monitorar SLA às 14h, 16h e 18h. Acionar correção imediata se abaixo de 98% | Torre de Controle | Imediato
-Redução de insucessos | Confirmar endereço antes da saída + WhatsApp padrão ao cliente + marcar áreas críticas | Qualidade | 3 dias
-Padronização operacional | Proibido sair sem bipar. Horário limite de chegada. Penalidade por atraso | Gestão | 1 semana`,
-    img:'',
-    obs:`Meta de evolução: Sem. 1 → 96% | Sem. 2 → 97,5% | Sem. 3 → 98% consistente. Resumo: Corte rígido + Rota limitada por entregador + Moto coringa = mudança de jogo.`,
-    resp:'Vini',
-  });
-  localStorage.setItem(PLANO_SK, JSON.stringify(planos));
-})();
-
-function initPlanoTab(){
-  renderPlanoCards();
-  renderPlanoStats();
-  populatePlanoSemanas();
-  setTimeout(initSlaChart, 100);
-}
-
-function populatePlanoSemanas(){
-  const sel = document.getElementById('plano-filter-semana');
-  if(!sel) return;
-  const semanas = [...new Set(planos.map(p=>p.semana).filter(Boolean))].sort().reverse();
-  sel.innerHTML = '<option value="">Todas as semanas</option>';
-  semanas.forEach(s=>{ const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o); });
-}
-
-function filterPlanoCards(){
-  const q = (document.getElementById('plano-search')?.value||'').toLowerCase();
-  const fs = document.getElementById('plano-filter-status')?.value||'';
-  const fw = document.getElementById('plano-filter-semana')?.value||'';
-  const allT = ['j3','tm','flexboys','vitom','mineiro','bibi','sonic','sos','pex','nobres','m10'];
-  const transpWithPlanos = [...new Set(planos.map(p=>p.transp))];
-  const combined = [...new Set([...transpWithPlanos,...allT])];
-  
-  combined.forEach(t=>{
-    const cfg = PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
-    const tp = planos.filter(p=>p.transp===t).sort((a,b)=>(b.semana||'').localeCompare(a.semana||''));
-    const latest = tp[0];
-    const card = document.getElementById('ptc-'+t);
-    if(!card) return;
-    
-    const matchQ = !q || cfg.name.toLowerCase().includes(q);
-    const matchS = !fs || (fs==='sem'?!latest:latest?.status===fs);
-    const matchW = !fw || tp.some(p=>p.semana===fw);
-    card.style.display = (matchQ && matchS && matchW) ? '' : 'none';
-  });
-}
-
-function renderPlanoStats(){
-  const total=planos.length;
-  const of=[...new Set(planos.filter(p=>p.status==='ofensora').map(p=>p.transp))].length;
-  const at=[...new Set(planos.filter(p=>p.status==='atencao').map(p=>p.transp))].length;
-  const ok=[...new Set(planos.filter(p=>p.status==='ok').map(p=>p.transp))].length;
-  document.getElementById('plano-stats').innerHTML=`
-    <div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:24px;font-weight:800">${total}</div><div style="font-size:11px;color:#666;font-weight:700;text-transform:uppercase">Planos</div></div>
-    <div style="background:#FDECEA;border:1.5px solid #F5B7B1;border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#C0392B">${of}</div><div style="font-size:11px;color:#C0392B;font-weight:700;text-transform:uppercase">🔴 Ofensoras</div></div>
-    <div style="background:#FFF8DC;border:1.5px solid #F9E79F;border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#8B6914">${at}</div><div style="font-size:11px;color:#8B6914;font-weight:700;text-transform:uppercase">🟡 Atenção</div></div>
-    <div style="background:#E6F7EE;border:1.5px solid #A9DFBF;border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#006E35">${ok}</div><div style="font-size:11px;color:#006E35;font-weight:700;text-transform:uppercase">🟢 OK</div></div>`;
-}
-
-function renderPlanoCards(){
-  const transpWithPlanos=[...new Set(planos.map(p=>p.transp))];
-  const allT=[...new Set([...transpWithPlanos,'j3','tm','flexboys','vitom','mineiro','bibi','sonic','sos','pex','nobres','m10'])];
-  let h='';
-  allT.forEach(t=>{
-    const cfg=PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
-    const tp=planos.filter(p=>p.transp===t).sort((a,b)=>(b.semana||'').localeCompare(a.semana||''));
-    const latest=tp[0];
-    const sc=latest?(PSTATUS_CFG[latest.status]||PSTATUS_CFG.ok):null;
-    const isSel=selectedPlanoTransp===t;
-    h+=`<div class="t-card${isSel?' active-t':''}" onclick="selectPlanoTransp('${t}')" id="ptc-${t}">
-      <div class="t-card-bar" style="background:${cfg.color}"></div>
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;padding-top:4px;margin-bottom:8px">
-        <div><div style="font-size:20px;margin-bottom:4px">${cfg.icon}</div>
-          <div style="font-size:15px;font-weight:800">${cfg.name}</div>
-          <div style="font-size:11px;color:#9E9E9E;margin-top:2px">${cfg.peflex||'Mensajeira'}</div>
-        </div>
-        ${sc?`<span style="font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;background:${sc.bg};color:${sc.color}">${sc.icon} ${sc.label}</span>`:'<span style="font-size:11px;color:#ccc">—</span>'}
-      </div>
-      ${latest?`<div style="background:#F5F5F5;border-radius:8px;padding:8px 10px;font-size:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#666">SLA</span><strong style="color:${sc?sc.color:'#333'}">${esc(latest.sla||'—')}</strong></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:#666">Meta</span><strong>${esc(latest.meta||'—')}</strong></div>
-        ${latest.var?`<div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:#666">Var.</span><strong style="color:${latest.var.startsWith('+')?'#006E35':'#C0392B'}">${esc(latest.var)}</strong></div>`:''}
-      </div>`:`<div style="font-size:12px;color:#ccc;text-align:center;padding:8px">Sem plano registrado</div>`}
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-        <div style="font-size:11px;color:#9E9E9E">${tp.length} plano${tp.length!==1?'s':''}</div>
-        <button onclick="event.stopPropagation();openPlanoForm(null,'${t}')" style="font-size:11px;background:#EBF3FF;color:#1A4DB3;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font-weight:700">+ Plano</button>
-      </div>
-    </div>`;
-  });
-  document.getElementById('plano-transp-grid').innerHTML=h;
-}
-
-function selectPlanoTransp(t){
-  selectedPlanoTransp=t;
-  document.querySelectorAll('[id^="ptc-"]').forEach(c=>c.classList.remove('active-t'));
-  const card=document.getElementById('ptc-'+t);
-  if(card)card.classList.add('active-t');
-  renderPlanoDetail(t);
-  const sel=document.getElementById('plano-chart-transp');if(sel){sel.value=t;renderSlaChart();}
-}
-
-function renderPlanoDetail(t){
-  const cfg=PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
-  const tp=planos.filter(p=>p.transp===t).sort((a,b)=>(b.semana||'').localeCompare(a.semana||''));
-  const area=document.getElementById('plano-detail-area');
-  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-    <div style="font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px"><span>${cfg.icon}</span> ${cfg.name} — Histórico</div>
-    <button onclick="openPlanoForm(null,'${t}')" class="btn btn-blue btn-sm">+ Novo plano</button>
-  </div>`;
-  if(!tp.length){h+='<div class="v-empty"><div style="font-size:28px;margin-bottom:6px">📋</div><div style="font-weight:800">Nenhum plano registrado</div></div>';area.innerHTML=h;return;}
-  h+='<div style="display:flex;flex-direction:column;gap:14px">';
-  tp.forEach(p=>{
-    const sc=PSTATUS_CFG[p.status]||PSTATUS_CFG.ok;
-    const ac=(p.acoes||'').split('\n').filter(Boolean);
-    const pr=(p.problemas||'').split('\n').filter(Boolean);
-    h+=`<div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:14px;overflow:hidden">
-      <div style="background:${sc.bg};border-bottom:2px solid ${sc.color}33;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:20px">${sc.icon}</span>
-          <div>
-            <div style="font-size:14px;font-weight:800;color:${sc.color}">${esc(p.semana||'Sem data')}</div>
-            <div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap">
-              ${p.sla?`<span style="font-size:13px;font-weight:800;color:${sc.color}">SLA: ${esc(p.sla)}</span>`:''}
-              ${p.meta?`<span style="font-size:12px;color:#666">Meta: ${esc(p.meta)}</span>`:''}
-              ${p.var?`<span style="font-size:12px;font-weight:700;color:${p.var.startsWith('+')?'#006E35':'#C0392B'}">${esc(p.var)} vs ant.</span>`:''}
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;gap:5px;align-items:center">
-          <span style="font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;background:${sc.color};color:#fff">${sc.label}</span>
-          <button onclick="openPlanoDetail('${p.id}')" class="btn btn-outline btn-sm">Detalhes</button>
-          <button onclick="editPlano('${p.id}')" style="background:#F0F0F0;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px">✎</button>
-          <button onclick="deletePlano('${p.id}')" style="background:#FDECEA;border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:12px;color:#C0392B">✕</button>
-        </div>
-      </div>
-      <div style="padding:16px 18px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div><div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#9E9E9E;margin-bottom:8px;letter-spacing:.5px">⚠️ Problemas</div>
-            ${pr.map(r=>`<div style="display:flex;gap:6px;margin-bottom:5px;align-items:flex-start"><span style="color:#C0392B;flex-shrink:0">●</span><span style="font-size:12px;color:#444;line-height:1.5">${esc(r)}</span></div>`).join('')}
-          </div>
-          <div><div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#9E9E9E;margin-bottom:8px;letter-spacing:.5px">⚡ Plano de Ação</div>
-            ${ac.map(a=>{const pts=a.split('|').map(x=>x.trim());return`<div style="background:#F5F5F5;border-radius:8px;padding:8px 10px;margin-bottom:6px;border-left:3px solid ${cfg.color}"><div style="font-size:12px;font-weight:700;color:#333;margin-bottom:2px">${esc(pts[0]||'')}</div>${pts[1]?`<div style="font-size:11px;color:#555;margin-bottom:3px">🔧 ${esc(pts[1])}</div>`:''}<div style="display:flex;gap:5px;flex-wrap:wrap">${pts[2]?`<span style="font-size:10px;background:#EBF3FF;color:#1A4DB3;padding:1px 7px;border-radius:8px;font-weight:700">📍 ${esc(pts[2])}</span>`:''} ${pts[3]?`<span style="font-size:10px;background:#FFF3E8;color:#A0522D;padding:1px 7px;border-radius:8px;font-weight:700">⏱ ${esc(pts[3])}</span>`:''}</div></div>`;}).join('')}
-          </div>
-        </div>
-        ${p.img?`<div style="margin-top:14px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#9E9E9E;margin-bottom:8px">📸 Plano Visual</div><img src="${p.img}" style="width:100%;border-radius:10px;border:1.5px solid #E0E0E0;cursor:pointer" onclick="openFoto(['${p.img}'],0,['Plano ${cfg.name}'])"></div>`:''}
-        ${p.obs?`<div style="margin-top:10px;background:#FFF8DC;border-radius:8px;padding:8px 12px;font-size:12px;color:#8B6914">📝 ${esc(p.obs)}</div>`:''}
-        ${p.resp?`<div style="margin-top:5px;font-size:11px;color:#9E9E9E">👤 ${esc(p.resp)}</div>`:''}
-      </div>
-    </div>`;
-  });
-  h+='</div>';
-  area.innerHTML=h;
-}
-
-function openPlanoDetail(id){
-  const p=planos.find(x=>x.id===id); if(!p)return;
-  const cfg=PLANO_TRANSP_CFG[p.transp]||PLANO_TRANSP_CFG.outra;
-  const sc=PSTATUS_CFG[p.status]||PSTATUS_CFG.ok;
-  document.getElementById('pd-header').innerHTML=`<div style="font-size:24px">${cfg.icon}</div><div style="flex:1"><div class="transp-modal-title">${cfg.name} — ${p.semana||''}</div><div class="transp-modal-sub">${sc.icon} ${sc.label} · SLA: ${p.sla||'—'} · Meta: ${p.meta||'—'}</div></div><button class="detail-close" onclick="closePlanoDetail()">✕</button>`;
-  document.getElementById('pd-edit-btn').onclick=()=>{closePlanoDetail();editPlano(id);};
-  const ac=(p.acoes||'').split('\n').filter(Boolean);
-  const pr=(p.problemas||'').split('\n').filter(Boolean);
-  let body='';
-  if(p.img) body+=`<img src="${p.img}" style="width:100%;border-radius:10px;margin-bottom:16px;cursor:pointer" onclick="openFoto(['${p.img}'],0,['Plano ${cfg.name}'])">`;
-  if(pr.length) body+=`<div class="transp-modal-section"><div class="transp-modal-section-title">⚠️ Problemas</div>${pr.map(r=>`<div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:#C0392B">●</span><span style="font-size:13px;color:#444">${esc(r)}</span></div>`).join('')}</div>`;
-  if(ac.length){
-    body+=`<div class="transp-modal-section"><div class="transp-modal-section-title">⚡ Plano de Ação</div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F5F5F5"><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #E0E0E0">Problema</th><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #E0E0E0">Ação</th><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #E0E0E0">Área</th><th style="padding:8px 10px;text-align:left;border-bottom:1px solid #E0E0E0">Prazo</th></tr></thead><tbody>`;
-    ac.forEach(a=>{const pts=a.split('|').map(x=>x.trim());body+=`<tr style="border-bottom:1px solid #F0F0F0"><td style="padding:8px 10px;font-weight:700">${esc(pts[0]||'')}</td><td style="padding:8px 10px">${esc(pts[1]||'')}</td><td style="padding:8px 10px"><span style="background:#EBF3FF;color:#1A4DB3;padding:1px 7px;border-radius:8px;font-size:11px;font-weight:700">${esc(pts[2]||'')}</span></td><td style="padding:8px 10px"><span style="background:#FFF3E8;color:#A0522D;padding:1px 7px;border-radius:8px;font-size:11px;font-weight:700">${esc(pts[3]||'')}</span></td></tr>`;});
-    body+=`</tbody></table></div>`;
-  }
-  if(p.obs) body+=`<div style="background:#FFF8DC;border-radius:8px;padding:10px 12px;font-size:13px;color:#8B6914;margin-top:8px">📝 ${esc(p.obs)}</div>`;
-  document.getElementById('pd-body').innerHTML=body;
-  document.getElementById('plano-detail-overlay').classList.add('open');
-}
-function closePlanoDetail(){document.getElementById('plano-detail-overlay').classList.remove('open');}
-
-function openPlanoForm(id,defaultTransp){
-  editingPlanoId=id;
-  const p=id?planos.find(x=>x.id===id):null;
-  document.getElementById('plano-form-title').textContent=id?'Editar Plano':'Novo Plano de Ação';
-  document.getElementById('pf-transp').value=p?p.transp:(defaultTransp||'j3');
-  document.getElementById('pf-semana').value=p?(p.semana||''):'';
-  document.getElementById('pf-sla').value=p?(p.sla||''):'';
-  document.getElementById('pf-meta').value=p?(p.meta||'99%'):'99%';
-  document.getElementById('pf-var').value=p?(p.var||''):'';
-  document.getElementById('pf-status').value=p?(p.status||'ofensora'):'ofensora';
-  document.getElementById('pf-problemas').value=p?(p.problemas||''):'';
-  document.getElementById('pf-acoes').value=p?(p.acoes||''):'';
-  document.getElementById('pf-img').value=p?(p.img&&p.img.startsWith('http')?p.img:''):'';
-  document.getElementById('pf-obs').value=p?(p.obs||''):'';
-  document.getElementById('pf-resp').value=p?(p.resp||''):'';
-  document.getElementById('plano-form-overlay').classList.add('open');
-}
-function closePlanoForm(){document.getElementById('plano-form-overlay').classList.remove('open');editingPlanoId=null;}
-function editPlano(id){openPlanoForm(id,null);}
-function savePlano(){
-  const transp=document.getElementById('pf-transp').value;
-  if(!transp){alert('Selecione a transportadora.');return;}
-  const existing=editingPlanoId?planos.find(x=>x.id===editingPlanoId):null;
-  const imgVal=document.getElementById('pf-img').value.trim();
-  const img=imgVal||(existing?existing.img:'');
-  const obj={id:editingPlanoId||puid(),transp,semana:document.getElementById('pf-semana').value,sla:document.getElementById('pf-sla').value.trim(),meta:document.getElementById('pf-meta').value.trim(),var:document.getElementById('pf-var').value.trim(),status:document.getElementById('pf-status').value,problemas:document.getElementById('pf-problemas').value.trim(),acoes:document.getElementById('pf-acoes').value.trim(),img,obs:document.getElementById('pf-obs').value.trim(),resp:document.getElementById('pf-resp').value.trim()};
-  if(editingPlanoId){const i=planos.findIndex(x=>x.id===editingPlanoId);planos[i]=obj;}
-  else planos.unshift(obj);
-  savePlanos();closePlanoForm();renderPlanoCards();renderPlanoStats();
-  if(selectedPlanoTransp===transp)renderPlanoDetail(transp);
-  showToast('Plano salvo!');
-}
-function deletePlano(id){
-  if(!confirm('Excluir este plano?'))return;
-  const t=planos.find(x=>x.id===id)?.transp;
-  planos=planos.filter(x=>x.id!==id);
-  savePlanos();renderPlanoCards();renderPlanoStats();
-  if(t&&selectedPlanoTransp===t)renderPlanoDetail(t);
-  showToast('Removido');
-}
-
-// ── GRÁFICO SLA ──────────────────────────────────────────────
-let slaChartInstance = null;
-
-function initSlaChart(){
-  const sel = document.getElementById('plano-chart-transp');
-  if(!sel) return;
-  const transpWithPlanos = [...new Set(planos.map(p=>p.transp))].filter(t=>planos.filter(p=>p.transp===t).length>1);
-  const cur = sel.value;
-  sel.innerHTML='<option value="">Selecione a transportadora</option>';
-  transpWithPlanos.forEach(t=>{
-    const cfg=PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
-    const o=document.createElement('option');o.value=t;o.textContent=cfg.name;sel.appendChild(o);
-  });
-  if(cur) sel.value=cur;
-  
-  // Show section only if there's data
-  const section = document.getElementById('plano-chart-section');
-  if(section) section.style.display = transpWithPlanos.length>0 ? '' : 'none';
-  
-  if(sel.value) renderSlaChart();
-  else if(transpWithPlanos.length===1){ sel.value=transpWithPlanos[0]; renderSlaChart(); }
-  // If selected transp changed
-  if(selectedPlanoTransp && transpWithPlanos.includes(selectedPlanoTransp)){
-    sel.value = selectedPlanoTransp;
-    renderSlaChart();
-  }
-}
-
-function renderSlaChart(){
-  const t = document.getElementById('plano-chart-transp')?.value;
-  if(!t){ if(slaChartInstance){slaChartInstance.destroy();slaChartInstance=null;} return; }
-  
-  const cfg = PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
-  const tp = planos.filter(p=>p.transp===t&&p.sla).sort((a,b)=>(a.semana||'').localeCompare(b.semana||''));
-  if(!tp.length) return;
-  
-  const labels = tp.map(p=>p.semana||'');
-  const data = tp.map(p=>parseFloat((p.sla||'0').replace(',','.')));
-  const meta = tp.map(p=>parseFloat((p.meta||'99').replace('%','').replace(',','.')));
-  
-  const canvas = document.getElementById('sla-chart');
-  if(!canvas) return;
-  
-  if(slaChartInstance){ slaChartInstance.destroy(); }
-  
-  slaChartInstance = new Chart(canvas, {
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {
-          label: cfg.name+' — SLA',
-          data,
-          borderColor: cfg.color,
-          backgroundColor: cfg.color+'22',
-          borderWidth:2.5,
-          pointRadius:5,
-          pointBackgroundColor: data.map((v,i)=>v>=(meta[i]||99)?'#00A650':'#C0392B'),
-          pointBorderColor:'#fff',
-          pointBorderWidth:2,
-          tension:.35,
-          fill:true,
-        },
-        {
-          label:'Meta',
-          data: meta,
-          borderColor:'#FFE600',
-          borderWidth:2,
-          borderDash:[6,4],
-          pointRadius:0,
-          tension:0,
-          fill:false,
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{display:true,position:'top',labels:{font:{family:'Nunito',size:12},boxWidth:14}},
-        tooltip:{
-          callbacks:{
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`
-          }
-        }
-      },
-      scales:{
-        x:{grid:{display:false},ticks:{font:{family:'Nunito',size:11}}},
-        y:{
-          min: Math.max(85, Math.min(...data)-2),
-          max: 100,
-          grid:{color:'#f0f0f0'},
-          ticks:{font:{family:'Nunito',size:11},callback:v=>v+'%'}
-        }
-      }
-    }
-  });
-}
-
-
-// ── EXPORTAÇÃO CSV ───────────────────────────────────────────
-function exportToCSV(data, filename, columns){
-  const header = columns.map(c=>c.label).join(',');
-  const rows = data.map(row=>
-    columns.map(c=>{
-      const val = (row[c.key]||'').toString().replace(/"/g,'\"').replace(/\n/g,' ');
-      return val.includes(',') ? '"'+val+'"' : val;
-    }).join(',')
-  );
-  const csv = [header,...rows].join('\n');
-  const blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url; a.download=filename+'.csv'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('CSV exportado!');
-}
-
-function exportMensajeiras(){
-  const data = window._msFiltered || MENSAJEIRAS;
-  exportToCSV(data, 'mensajeiras_flex', [
-    {label:'Nome',key:'nome'},{label:'Estado',key:'estado'},
-    {label:'PeFlex',key:'peflex'},{label:'Status',key:'status'},
-    {label:'Proprietário',key:'proprietario'},{label:'Telefone',key:'telefone'},
-    {label:'E-mail',key:'email'},{label:'Frete',key:'frete'},
-    {label:'Homologação',key:'homologacao'},{label:'Premium desde',key:'premium'},
-  ]);
-}
-
-function exportNegativas(){
-  exportToCSV(negativas, 'negativas_flex', [
-    {label:'Nome',key:'nome'},{label:'Estado',key:'estado'},
-    {label:'Data',key:'data'},{label:'Motivo tipo',key:'motivo_tipo'},
-    {label:'Motivo',key:'motivo'},{label:'Status',key:'status'},
-    {label:'Data retorno',key:'data_retorno'},{label:'Responsável',key:'resp'},
-  ]);
-}
-
-function exportPlanos(){
-  exportToCSV(planos, 'planos_acao_flex', [
-    {label:'Transportadora',key:'transp'},{label:'Semana',key:'semana'},
-    {label:'SLA',key:'sla'},{label:'Meta',key:'meta'},
-    {label:'Variação',key:'var'},{label:'Status',key:'status'},
-    {label:'Observações',key:'obs'},{label:'Responsável',key:'resp'},
-  ]);
-}
-
-
-// ── ATALHOS DE TECLADO ───────────────────────────────────────
-document.addEventListener('keydown', e=>{
-  if(e.key==='Escape'){
-    // Close any open overlay
-    const overlays = document.querySelectorAll('.overlay.open');
-    if(overlays.length){
-      overlays[overlays.length-1].classList.remove('open');
-      return;
-    }
-  }
-  // Ctrl/Cmd+K → focus search
-  if((e.ctrlKey||e.metaKey) && e.key==='k'){
-    e.preventDefault();
-    const activeTab = document.querySelector('.page.active');
-    if(activeTab){
-      const search = activeTab.querySelector('input[type="text"]');
-      if(search){ search.focus(); search.select(); }
-    }
-  }
-});
-
-// ── BOTÃO TOPO ───────────────────────────────────────────────
-window.addEventListener('scroll', ()=>{
-  const btn = document.getElementById('btn-topo');
-  if(btn) btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
-});
-
-const _origShowTab4=showTab;
-showTab=function(tab,btn){_origShowTab4(tab,btn);if(tab==='plano')initPlanoTab();};
-
-
-function filterVisitas(){
-  const fm = document.getElementById('vis-filter-mes')?.value||'';
-  const fc = document.getElementById('vis-filter-cat')?.value||'';
-  if(!selectedTransp) return;
-  const cnt = document.getElementById('vis-filter-count');
-  const t = selectedTransp;
-  const tvs = visitas.filter(v=>{
-    if(v.transp!==t) return false;
-    if(fm&&!(v.date||'').startsWith(fm)) return false;
-    if(fc&&v.cat!==fc) return false;
-    return true;
-  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(cnt) cnt.textContent=(fm||fc)?tvs.length+' visita(s) encontrada(s)':'';
-  const modal=document.getElementById('transp-detail-overlay');
-  if(modal&&modal.classList.contains('open')){
-    const cc_map={operacional:{icon:'🏭',bg:'#EBF3FF',color:'#1A4DB3'},comercial:{icon:'💼',bg:'#E6F7EE',color:'#006E35'},financeiro:{icon:'💰',bg:'#FFF0E6',color:'#B34400'},homologacao:{icon:'✅',bg:'#E6F7EE',color:'#006E35'},treinamento:{icon:'📚',bg:'#F3E8FF',color:'#6C3483'},outro:{icon:'📋',bg:'#F5F5F5',color:'#555'}};
-    let h='';
-    if(!tvs.length){h='<div class="v-empty"><div style="font-size:28px;margin-bottom:6px">🔍</div><div style="font-weight:800;font-size:15px">Nenhuma visita encontrada</div><p style="font-size:13px">Ajuste os filtros</p></div>';}
-    else{tvs.forEach(v=>{const cc=cc_map[v.cat]||cc_map.outro;const fotos=(v.fotos||[]).filter(Boolean);const links=(v.links||[]).filter(Boolean);h+=`<div style="background:#F5F5F5;border-radius:12px;padding:14px;margin-bottom:12px"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px"><div style="display:flex;gap:10px"><div style="width:36px;height:36px;border-radius:9px;background:${cc.bg};display:flex;align-items:center;justify-content:center;font-size:17px">${cc.icon}</div><div><div style="font-size:14px;font-weight:800;margin-bottom:4px">${esc(v.title)}</div><div style="display:flex;gap:4px;flex-wrap:wrap">${v.date?'<span style="font-size:11px;color:#9E9E9E">📅 '+fmtDate(v.date)+'</span>':''}${v.resp?'<span style="font-size:11px;color:#9E9E9E">👤 '+esc(v.resp)+'</span>':''}</div></div></div></div>${v.notes?'<div style="font-size:13px;color:#555;line-height:1.65;white-space:pre-wrap;background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px">'+esc(v.notes)+'</div>':''}${fotos.length?'<div class="fotos-grid" style="margin-top:8px">'+fotos.map((f,fi)=>'<div class="foto-grid-item" onclick="openFoto('+JSON.stringify(fotos)+','+fi+','+JSON.stringify(v.foto_labels||[])+')"><img src="'+f+'" onerror="this.parentElement.hidden=true"><div class="foto-grid-label">'+(( v.foto_labels||[])[fi]||'Foto '+(fi+1))+'</div></div>').join('')+'</div>':''}</div>`;});}
-    document.getElementById('td-tab-visitas').innerHTML=h;
-    const nf=tvs.reduce((a,v)=>a+(v.fotos||[]).length,0);
-    document.getElementById('td-sub').textContent=tvs.length+' visita'+(tvs.length!==1?'s':'')+' · '+nf+' foto'+(nf!==1?'s':'');
-  } else { openTranspDetail(t); }
-}
+}, 50);
 
 // ══════════════════════════════════════════════════════
 // AGENDA DE VISITAS MODULE
