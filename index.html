@@ -203,6 +203,14 @@ header{background:var(--yellow);padding:0 24px;height:56px;display:flex;align-it
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 .visitas-sub{animation:fadeUp .2s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* SITE SWITCHER */
+.site-switcher{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.12);border-radius:20px;padding:4px}
+.site-btn{font-family:var(--font);font-size:12px;font-weight:800;padding:5px 14px;border-radius:16px;border:none;cursor:pointer;transition:all .15s;color:rgba(26,26,26,0.55);background:transparent;letter-spacing:.3px}
+.site-btn.active{background:#1A1A1A;color:#FFE600;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
+.site-badge{display:inline-block;font-size:9px;font-weight:800;padding:1px 5px;border-radius:6px;margin-left:3px;vertical-align:middle}
+.mlb-badge{background:rgba(0,166,80,.25);color:#006E35}
+.mlm-badge{background:rgba(52,131,250,.25);color:#1A4DB3}
 @media(max-width:640px){
   header{padding:0 14px}
   .page{padding:14px}
@@ -225,9 +233,17 @@ header{background:var(--yellow);padding:0 24px;height:56px;display:flex;align-it
   <div class="header-left">
     <div class="meli-logo">mercado<em>livre</em></div>
     <div class="header-tag">FLEX</div>
-    <div class="header-sub">Painel Mensajeiras</div>
+    <div class="header-sub" id="header-sub">Painel Mensajeiras · <span id="site-label" style="font-weight:800">MLB</span></div>
   </div>
-  <div class="header-right">
+  <div class="header-right" style="display:flex;align-items:center;gap:12px">
+    <div class="site-switcher" id="site-switcher">
+      <button class="site-btn active" id="btn-mlb" onclick="switchSite('MLB',this)">
+        🇧🇷 MLB <span class="site-badge mlb-badge">Brasil</span>
+      </button>
+      <button class="site-btn" id="btn-mlm" onclick="switchSite('MLM',this)">
+        🇲🇽 MLM <span class="site-badge mlm-badge">México</span>
+      </button>
+    </div>
     <button class="btn btn-outline btn-sm" onclick="openVisitaModal(null,null)">+ Nova visita</button>
   </div>
 </header>
@@ -275,6 +291,7 @@ header{background:var(--yellow);padding:0 24px;height:56px;display:flex;align-it
       <input type="text" id="ms-search" placeholder="Buscar mensajeira, proprietário..." oninput="renderMs()">
     </div>
     <button onclick="exportMensajeiras()" style="background:#fff;border:1.5px solid #E0E0E0;color:#555;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;font-family:var(--font);font-size:12px;white-space:nowrap;display:flex;align-items:center;gap:5px">📤 CSV</button>
+    <button id="btn-add-ms" onclick="openAddMensajeiraMLM()" style="display:none;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer;font-family:var(--font);font-size:12px;white-space:nowrap">+ Mensajeira</button>
     <span id="ms-result-count" style="font-size:12px;color:#9E9E9E;font-weight:600"></span>
     <select class="filter-sel" id="ms-filter-estado" onchange="renderMs()">
       <option value="">Todos os estados</option>
@@ -673,7 +690,8 @@ function renderMs(){
   const fe=document.getElementById('ms-filter-estado').value;
 
   // Filter by cat
-  let filtered = MENSAJEIRAS.filter(m=>{
+  const _MS = getMensajeiras();
+  let filtered = _MS.filter(m=>{
     if(msFilterCat==='Fora landing Page') return m.status==='Fora landing Page';
     if(msFilterCat==='Desomologado') return m.status==='Desomologado';
     if(msFilterCat) return m.peflex===msFilterCat;
@@ -761,6 +779,9 @@ function renderMs(){
 
   document.getElementById('ms-board').innerHTML = html;
   window._msFiltered = filtered;
+  // Show/hide add button for MLM
+  const addBtn=document.getElementById('btn-add-ms');
+  if(addBtn) addBtn.style.display=currentSite==='MLM'?'':'none';
   // Update result count in filter bar
   const countEl = document.getElementById('ms-result-count');
   if(countEl) countEl.textContent = filtered.length + ' mensajeira' + (filtered.length!==1?'s':'') + ' encontrada' + (filtered.length!==1?'s':'');
@@ -770,8 +791,9 @@ function openMsModal(idxOrNome){
   let m;
   if(typeof idxOrNome === 'string'){
     const nome = decodeURIComponent(idxOrNome);
-    m = (window._msFiltered || MENSAJEIRAS).find(x=>x.nome===nome)
-       || MENSAJEIRAS.find(x=>x.nome===nome);
+    const _MS2 = getMensajeiras();
+    m = (window._msFiltered || _MS2).find(x=>x.nome===nome)
+       || _MS2.find(x=>x.nome===nome);
   } else {
     m = (window._msFiltered || MENSAJEIRAS)[idxOrNome];
   }
@@ -1165,6 +1187,214 @@ function deleteNegativa(id){
 }
 
 // ── INIT ─────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════
+// SITE MODULE — MLB / MLM
+// ══════════════════════════════════════════════════════
+let currentSite = localStorage.getItem('vini26_site') || 'MLB';
+
+// Storage keys per site
+function getSiteKey(baseKey){ return baseKey + '_' + currentSite; }
+
+// All site-specific data
+// MLB = Brasil (existing data)
+// MLM = México (starts empty, user fills)
+
+// Site storage keys map
+const SITE_KEYS = {
+  visitas:   'vini26_visitas_v7',
+  negativa:  'vini26_negativa_v3',
+  gaAcoes:   'vini26_gestao_acoes_v1',
+  comunicados:'vini26_comunicados_v1',
+  planos:    'vini26_planos_v1',
+  agenda:    'vini26_agenda_visitas_v1',
+};
+
+// Load all data for current site
+function loadSiteData(){
+  const site = currentSite;
+
+  // visitas
+  const vKey = SITE_KEYS.visitas + '_' + site;
+  visitas = JSON.parse(localStorage.getItem(vKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.visitas) || '[]' : '[]'));
+
+  // negativas
+  const nKey = SITE_KEYS.negativa + '_' + site;
+  negativas = JSON.parse(localStorage.getItem(nKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.negativa) || '[]' : '[]'));
+
+  // gestao acoes
+  const gaKey = SITE_KEYS.gaAcoes + '_' + site;
+  gestaoAcoes = JSON.parse(localStorage.getItem(gaKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.gaAcoes) || '[]' : '[]'));
+
+  // comunicados
+  const cKey = SITE_KEYS.comunicados + '_' + site;
+  comunicados = JSON.parse(localStorage.getItem(cKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.comunicados) || '[]' : '[]'));
+
+  // planos
+  const pKey = SITE_KEYS.planos + '_' + site;
+  planos = JSON.parse(localStorage.getItem(pKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.planos) || '[]' : '[]'));
+
+  // agenda visitas
+  const avKey = SITE_KEYS.agenda + '_' + site;
+  agendaVisitas = JSON.parse(localStorage.getItem(avKey) || (site==='MLB' ? localStorage.getItem(SITE_KEYS.agenda) || '[]' : '[]'));
+}
+
+// Save functions per site
+function saveVisitas(){
+  localStorage.setItem(SITE_KEYS.visitas + '_' + currentSite, JSON.stringify(visitas));
+}
+function saveNegativas(){
+  localStorage.setItem(SITE_KEYS.negativa + '_' + currentSite, JSON.stringify(negativas));
+}
+function saveGestaoAcoes(){
+  localStorage.setItem(SITE_KEYS.gaAcoes + '_' + currentSite, JSON.stringify(gestaoAcoes));
+}
+function saveComunicados(){
+  localStorage.setItem(SITE_KEYS.comunicados + '_' + currentSite, JSON.stringify(comunicados));
+}
+function savePlanos(){
+  localStorage.setItem(SITE_KEYS.planos + '_' + currentSite, JSON.stringify(planos));
+}
+function saveAgendaVisitas(){
+  localStorage.setItem(SITE_KEYS.agenda + '_' + currentSite, JSON.stringify(agendaVisitas));
+}
+
+// MLM Mensajeiras (México) — starts empty, user adds via modal
+// For MLB we use the existing MENSAJEIRAS array
+// For MLM we use a separate storage
+function getMensajeiras(){
+  if(currentSite === 'MLB') return MENSAJEIRAS;
+  const stored = localStorage.getItem('vini26_mensajeiras_MLM');
+  return stored ? JSON.parse(stored) : [];
+}
+function saveMensajeiras(arr){
+  if(currentSite === 'MLM'){
+    localStorage.setItem('vini26_mensajeiras_MLM', JSON.stringify(arr));
+  }
+}
+
+// TRANSP_CFG per site
+const TRANSP_CFG_MLB = {
+  ag:  {name:'AG Transporte', color:'#3483FA', icon:'🔵'},
+  ln:  {name:'Ln Flex',       color:'#00A650', icon:'🟢'},
+  gon: {name:'GONCARGAS',     color:'#FF7733', icon:'🟠'},
+  wa:  {name:'Wa Flex',       color:'#9B59B6', icon:'🟣'},
+  rnd: {name:'RND',           color:'#E8A020', icon:'🟡'},
+};
+const TRANSP_CFG_MLM = {
+  t1: {name:'Transportadora MX 1', color:'#3483FA', icon:'🔵'},
+  t2: {name:'Transportadora MX 2', color:'#00A650', icon:'🟢'},
+  t3: {name:'Transportadora MX 3', color:'#FF7733', icon:'🟠'},
+};
+
+// Switch site
+function switchSite(site, btn){
+  if(currentSite === site) return;
+  currentSite = site;
+  localStorage.setItem('vini26_site', site);
+
+  // Update buttons
+  document.querySelectorAll('.site-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Update TRANSP_CFG
+  Object.assign(TRANSP_CFG, site==='MLB' ? TRANSP_CFG_MLB : TRANSP_CFG_MLM);
+
+  // Update subtitle
+  const lbl = document.getElementById('site-label');
+  if(lbl) lbl.textContent = site;
+
+  // Update header color accent
+  document.querySelector('header').style.background = site==='MLB' ? 'var(--yellow)' : '#3483FA';
+  document.querySelector('header').style.borderBottomColor = site==='MLB' ? '#E6CF00' : '#2271E0';
+  document.querySelectorAll('.nav-btn.active').forEach(b=>b.style.color = site==='MLB' ? 'var(--blue)' : '#fff');
+
+  // Reload all site data
+  loadSiteData();
+
+  // Re-seed if MLB
+  if(site === 'MLB'){
+    seedRNDVisita();
+    seedOperacoes();
+    seedComunicados();
+  }
+
+  // Re-render active tab
+  const activeTab = document.querySelector('.page.active');
+  if(activeTab){
+    const tabId = activeTab.id.replace('tab-','');
+    if(tabId==='mensajeiras'){ initCatCounts(); renderMs(); }
+    if(tabId==='visitas'){ updateTranspStats(); }
+    if(tabId==='negativa'){ renderNegativa(); }
+    if(tabId==='gestao'){
+      const activeGestao = document.querySelector('.gestao-tab-content[style*="block"]');
+      if(activeGestao?.id==='gt-acoes') renderGestaoAcoes();
+      if(activeGestao?.id==='gt-comunicados') renderComunicados();
+    }
+    if(tabId==='plano'){ initPlanoTab(); }
+  }
+
+  showToast('Site alterado para ' + site + ' 🌎');
+}
+
+// Override original save functions to be site-aware (already done above)
+// Override initCatCounts to use getMensajeiras()
+function initCatCounts(){
+  const ms = getMensajeiras();
+  const countEl = id => document.getElementById(id);
+  if(countEl('count-all'))  countEl('count-all').textContent  = ms.length;
+  if(countEl('count-prem')) countEl('count-prem').textContent = ms.filter(m=>m.peflex==='Premium').length;
+  if(countEl('count-cert')) countEl('count-cert').textContent = ms.filter(m=>m.peflex==='Certifcada').length;
+  if(countEl('count-rec'))  countEl('count-rec').textContent  = ms.filter(m=>m.peflex==='Recomenda').length;
+  if(countEl('count-fora')) countEl('count-fora').textContent = ms.filter(m=>m.status==='Fora landing Page').length;
+  if(countEl('count-des'))  countEl('count-des').textContent  = ms.filter(m=>m.status==='Desomologado').length;
+}
+
+// Seed comunicados (called on site switch back to MLB)
+function seedComunicados(){
+  if(!comunicados.find(c=>c.id==='com-validacao-automatica-1')){
+    comunicados.unshift({
+      id:'com-validacao-automatica-1',
+      title:'⚡ Validação de Performance Agora é Automática',
+      data:'2026-04-23', dest:'Todas', canal:'email', resp:'Vini',
+      texto:'Processo de validação mensal automatizado a partir do próximo ciclo. Validação automática dos indicadores + tolerância zero. Sem retorno durante o mês vigente caso indicadores sejam corrigidos.',
+    });
+    saveComunicados();
+  }
+}
+
+// MLM — add mensajeira modal
+function openAddMensajeiraMLM(){
+  if(currentSite !== 'MLM'){ showToast('Apenas no MLM'); return; }
+  // Simple prompt for now
+  const nome = prompt('Nome da mensajeira (MLM):');
+  if(!nome) return;
+  const estado = prompt('Estado/Região:') || '';
+  const ms = getMensajeiras();
+  ms.push({nome, estado, peflex:'Recomenda', status:'Ativo', proprietario:'', telefone:'', email:'', instagram:'', logo:'', frete:'', homologacao:'', premium:'', desomologacao:'', motivo:''});
+  saveMensajeiras(ms);
+  initCatCounts();
+  renderMs();
+  showToast('Mensajeira adicionada!');
+}
+
+// Init site on load
+(function initSite(){
+  loadSiteData();
+  const site = currentSite;
+  if(site === 'MLM'){
+    Object.assign(TRANSP_CFG, TRANSP_CFG_MLM);
+    document.querySelector('header').style.background = '#3483FA';
+    document.querySelector('header').style.borderBottomColor = '#2271E0';
+    const lbl = document.getElementById('site-label');
+    if(lbl) lbl.textContent = 'MLM';
+    const btnMlm = document.getElementById('btn-mlm');
+    const btnMlb = document.getElementById('btn-mlb');
+    if(btnMlm) btnMlm.classList.add('active');
+    if(btnMlb) btnMlb.classList.remove('active');
+  }
+})();
+
 initCatCounts();
 seedRNDVisita();
 seedOperacoes();
