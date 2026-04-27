@@ -232,17 +232,17 @@ header{background:var(--yellow);padding:0 24px;height:56px;display:flex;align-it
 
 <!-- NAV -->
 <nav class="nav-tabs">
-  <button class="nav-btn active" onclick="showTab('mensajeiras',this)">📋 Mensajeiras</button>
+  <button class="nav-btn active" onclick="showTab('gestao',this)">📊 Gestão Mensajeiras</button>
+  <button class="nav-btn" onclick="showTab('mensajeiras',this)">📋 Mensajeiras</button>
   <button class="nav-btn" onclick="showTab('visitas',this)">🚛 Visitas</button>
   <button class="nav-btn" onclick="showTab('negativa',this)">🚫 Negativa Recomendação</button>
-  <button class="nav-btn" onclick="showTab('gestao',this)">📊 Gestão Mensajeiras</button>
   <button class="nav-btn" onclick="showTab('plano',this)">🎯 Plano de Ação</button>
 </nav>
 
 <!-- ══════════════════════════════════════════════════
      TAB: MENSAJEIRAS
 ══════════════════════════════════════════════════ -->
-<div id="tab-mensajeiras" class="page active">
+<div id="tab-mensajeiras" class="page">
 
   <!-- Category pills (clickable filters) -->
   <div class="cat-pills">
@@ -1111,6 +1111,9 @@ seedRNDVisita();
 seedOperacoes();
 updateTranspStats();
 renderMs();
+// Gestão é a primeira aba — inicializar sub-abas corretamente
+document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
+document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
 
 // ══════════════════════════════════════════════════════
 // GESTÃO MENSAJEIRAS MODULE
@@ -1785,7 +1788,7 @@ showTab=function(tab,btn){_origShowTab4(tab,btn);if(tab==='plano')initPlanoTab()
 <!-- ══════════════════════════════════════════════════
      TAB: GESTÃO MENSAJEIRAS
 ══════════════════════════════════════════════════ -->
-<div id="tab-gestao" class="page">
+<div id="tab-gestao" class="page active">
 
   <!-- Header info -->
   <div style="background:var(--yellow);border-radius:14px;padding:16px 20px;margin-bottom:22px;display:flex;gap:14px;align-items:center">
