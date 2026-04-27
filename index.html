@@ -1125,6 +1125,45 @@ let comunicados   = JSON.parse(localStorage.getItem(COM_SK) || '[]');
 
 // Seed comunicado oficial validação automática
 (function(){
+  // Seed comunicado levantamento condomínios
+  if(!comunicados.find(c=>c.id==='com-condominios-sp-2025')){
+    comunicados.push({
+      id: 'com-condominios-sp-2025',
+      title: '🏢 Levantamento de Condomínios Comerciais — SP',
+      data: '2026-04-27',
+      dest: 'Certificada',
+      canal: 'whatsapp',
+      resp: 'Vini',
+      texto: `LOGÍSTICA & OPERAÇÕES — Levantamento de Condomínios Comerciais
+
+Oi, tudo bem?
+
+Estamos mapeando condomínios comerciais nas regiões abaixo, que atualmente concentram o maior número de drivers em situação CRÍTICA em SP.
+
+📍 REGIÕES MAPEADAS:
+BR-SP-Centro | BR-SP-Sul-1 | BR-SP-Sul-3
+BR-SP-Oeste-1 | BR-SP-Oeste-2 | BR-SP-Oeste-3
+BR-SP-Leste-1 | BR-SP-Leste-3 | BR-SP-Leste-4
+BR-SP-Leste-5 | BR-SP-Norte-1 | BR-SP-Norte-2
+BR-SP-Norte-3 | BR-SP-Barueri-1 | BR-SP-Barueri-2
+
+📋 O QUE PRECISAMOS DE VOCÊS:
+Listagem dos condomínios comerciais atendidos nessas regiões, especialmente aqueles com restrição de recebimento de pacotes até as 17h00. Isso vai nos ajudar a identificar gargalos e definir ações corretivas.
+
+📌 INFORMAÇÕES NECESSÁRIAS POR CONDOMÍNIO:
+• Nome e endereço completo
+• Região / Zona
+• Horário limite de recebimento
+• Restrições operacionais adicionais
+
+⏰ Prazo de retorno: 27/04/2025
+
+Contem conosco para qualquer dúvida!
+Mercado Livre`,
+    });
+    localStorage.setItem(COM_SK, JSON.stringify(comunicados));
+  }
+
   if(!comunicados.find(c=>c.id==='com-validacao-automatica-1')){
     comunicados.unshift({
       id: 'com-validacao-automatica-1',
