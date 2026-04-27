@@ -1395,22 +1395,15 @@ function openAddMensajeiraMLM(){
   showToast('Mensajeira adicionada!');
 }
 
-// Init site on load
-(function initSite(){
-  loadSiteData();
-  const site = currentSite;
-  if(site === 'MLM'){
-    Object.assign(TRANSP_CFG, TRANSP_CFG_MLM);
-    document.querySelector('header').style.background = '#3483FA';
-    document.querySelector('header').style.borderBottomColor = '#2271E0';
-    const lbl = document.getElementById('site-label');
-    if(lbl) lbl.textContent = 'MLM';
-    const btnMlm = document.getElementById('btn-mlm');
-    const btnMlb = document.getElementById('btn-mlb');
-    if(btnMlm) btnMlm.classList.add('active');
-    if(btnMlb) btnMlb.classList.remove('active');
+// Init site on load - runs AFTER all modules initialized
+// Using setTimeout to ensure all DOM and variables are ready
+setTimeout(function(){
+  // Only load site-specific data if site is MLM (MLB is already loaded by seeds)
+  const savedSite = localStorage.getItem('vini26_site');
+  if(savedSite && savedSite !== 'MLB'){
+    switchSite(savedSite, document.getElementById('btn-mlm'));
   }
-})();
+}, 0);
 
 initCatCounts();
 seedRNDVisita();
