@@ -676,14 +676,14 @@ function setCatFilter(cat, btn){
   renderMs();
 }
 
-function initCatCounts(){
-  document.getElementById('count-all').textContent = MENSAJEIRAS.length;
-  document.getElementById('count-prem').textContent = MENSAJEIRAS.filter(m=>m.peflex==='Premium').length;
-  document.getElementById('count-cert').textContent = MENSAJEIRAS.filter(m=>m.peflex==='Certifcada').length;
-  document.getElementById('count-rec').textContent = MENSAJEIRAS.filter(m=>m.peflex==='Recomenda').length;
-  document.getElementById('count-fora').textContent = MENSAJEIRAS.filter(m=>m.status==='Fora landing Page').length;
-  document.getElementById('count-des').textContent = MENSAJEIRAS.filter(m=>m.status==='Desomologado').length;
-}
+
+
+
+
+
+
+
+
 
 function renderMs(){
   const q=(document.getElementById('ms-search').value||'').toLowerCase();
@@ -1413,8 +1413,18 @@ seedOperacoes();
 updateTranspStats();
 renderMs();
 // Gestão é a primeira aba — inicializar sub-abas corretamente
-document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
-document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+(function initGestaoTab(){
+  const contents = document.querySelectorAll('.gestao-tab-content');
+  const btns = document.querySelectorAll('.gestao-tab-btn');
+  contents.forEach((el,i) => el.style.display = i===0 ? 'block' : 'none');
+  btns.forEach((b,i) => {
+    b.classList.remove('active');
+    if(i===0) b.classList.add('active');
+  });
+  // Ensure the first gestao sub-tab (peflex) is visible
+  const first = document.getElementById('gt-peflex');
+  if(first) first.style.display = 'block';
+})();
 
 // ══════════════════════════════════════════════════════
 // GESTÃO MENSAJEIRAS MODULE
