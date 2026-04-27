@@ -1498,6 +1498,174 @@ function deleteAgendaVisita(id){
   renderAgendaVisitas();
   showToast('Removido');
 }
+
+// ══════════════════════════════════════════════════════
+// SUGESTÃO DE AGENDA DE VISITAS
+// ══════════════════════════════════════════════════════
+
+function showSugestaoAgenda(){
+  const panel = document.getElementById('sugestao-agenda-panel');
+  if(!panel) return;
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  if(panel.style.display==='block') renderSugestaoAgenda();
+}
+
+function renderSugestaoAgenda(){
+  const cat  = document.getElementById('sug-filter-cat')?.value || '';
+  const tipo = document.getElementById('sug-filter-tipo')?.value || 'operacional';
+  const freq = document.getElementById('sug-filter-freq')?.value || 'mensal';
+
+  const ms = getMensajeiras().filter(m=>m.status==='Ativo' && (m.peflex==='Premium'||m.peflex==='Certifcada'||m.peflex==='Recomenda'));
+  const filtered = cat ? ms.filter(m=>m.peflex===cat) : ms;
+
+  // Calculate priority score for each mensajeira
+  const scored = filtered.map(m=>{
+    // Last visit date for this mensajeira
+    const lastVisit = visitas
+      .filter(v=>v.transp && MENSAJEIRAS.find(x=>x.nome===m.nome))
+      .sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
+
+    // Days since last visit
+    const lastDate = lastVisit?.date ? new Date(lastVisit.date) : null;
+    const daysSince = lastDate ? Math.floor((new Date()-lastDate)/86400000) : 999;
+
+    // Priority score (higher = more urgent)
+    let score = 0;
+    if(m.peflex==='Premium')    score += 50;
+    if(m.peflex==='Certifcada') score += 30;
+    if(m.peflex==='Recomenda')  score += 10;
+    if(daysSince > 90)  score += 40;
+    else if(daysSince > 60) score += 25;
+    else if(daysSince > 30) score += 10;
+    if(!lastDate) score += 30; // nunca visitada
+
+    return { m, score, daysSince, lastDate, lastVisit };
+  }).sort((a,b)=>b.score-a.score);
+
+  // Generate suggested dates starting from next Monday
+  const today = new Date();
+  const nextMonday = new Date(today);
+  const dayOfWeek = today.getDay();
+  const daysUntilMonday = dayOfWeek===0 ? 1 : (8-dayOfWeek)%7 || 7;
+  nextMonday.setDate(today.getDate() + daysUntilMonday);
+
+  const freqDays = {mensal:30, bimestral:60, trimestral:90}[freq] || 30;
+  const visitsPerWeek = 3;
+
+  // Assign dates
+  let dateOffset = 0;
+  let dayCount = 0;
+  const suggestions = scored.slice(0,15).map((item, i)=>{
+    const d = new Date(nextMonday);
+    d.setDate(d.getDate() + Math.floor(i/visitsPerWeek)*7 + (i%visitsPerWeek)*2);
+    // Skip weekends
+    while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1);
+    const dateStr = d.toISOString().split('T')[0];
+    return {...item, suggestedDate: dateStr};
+  });
+
+  const tipoMap = {
+    operacional:{icon:'🏭',label:'Operacional'},
+    comercial:{icon:'💼',label:'Comercial'},
+    homologacao:{icon:'✅',label:'Homologação'},
+    treinamento:{icon:'📚',label:'Treinamento'},
+  };
+  const tc = tipoMap[tipo]||tipoMap.operacional;
+
+  const prioColor = score => score>=70?'#C0392B':score>=40?'#E8A020':'#00A650';
+  const prioLabel = score => score>=70?'🔴 Alta':score>=40?'🟡 Média':'🟢 Normal';
+
+  let h = `<div style="font-size:12px;color:#666;margin-bottom:12px">
+    ${suggestions.length} mensajeiras sugeridas · ${tc.icon} ${tc.label} · Freq. ${freq}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">`;
+
+  suggestions.forEach((item, i)=>{
+    const {m, score, daysSince, lastDate, suggestedDate} = item;
+    const prio = prioColor(score);
+    const already = agendaVisitas.find(a=>a.nome===m.nome && a.data===suggestedDate);
+    h += `<div style="background:#F9F9F9;border:1.5px solid ${already?'#A9DFBF':'#E0E0E0'};border-left:3px solid ${prio};border-radius:10px;padding:12px;position:relative">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:#333;margin-bottom:3px">${esc(m.nome)}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
+            <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#EBF3FF;color:#1A4DB3">${m.peflex}</span>
+            <span style="font-size:10px;font-weight:700;padding:1px 7px;border-radius:8px;background:#F5F5F5;color:#555">${prioLabel(score)}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:12px;font-weight:800;color:#3483FA">${fmtDate(suggestedDate)}</div>
+          <div style="font-size:10px;color:#9E9E9E">${daysSince===999?'Nunca visitada':daysSince+' dias atrás'}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:11px;color:#666;flex:1">${tc.icon} ${tc.label}${m.estado?' · '+m.estado:''}</span>
+        ${already
+          ? '<span style="font-size:10px;font-weight:700;color:#006E35;background:#E6F7EE;padding:2px 8px;border-radius:8px">✅ Agendada</span>'
+          : `<button onclick="agendarSugestao('${m.nome.replace(/'/g,"\\'")}','${suggestedDate}','${tipo}')"
+              style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;border:1.5px solid #3483FA;background:transparent;color:#3483FA;cursor:pointer;font-family:var(--font)">
+              + Agendar
+            </button>`
+        }
+      </div>
+    </div>`;
+  });
+
+  h += '</div>';
+  const board = document.getElementById('sugestao-board');
+  if(board) board.innerHTML = h;
+}
+
+function agendarSugestao(nome, data, tipo){
+  const exists = agendaVisitas.find(a=>a.nome===nome && a.data===data);
+  if(exists){ showToast('Já agendada!'); return; }
+  agendaVisitas.unshift({
+    id: avuid(),
+    nome, data, tipo,
+    hora: '09:00',
+    status: 'agendada',
+    resp: 'Vini',
+    pauta: 'Visita ' + (tipo==='operacional'?'operacional':'comercial') + ' — sugestão automática',
+    end: '',
+  });
+  saveAgendaVisitas();
+  renderSugestaoAgenda();
+  renderAgendaVisitas();
+  showToast('✅ ' + nome + ' agendada!');
+}
+
+function agendarTodasSugestoes(){
+  const cat  = document.getElementById('sug-filter-cat')?.value || '';
+  const tipo = document.getElementById('sug-filter-tipo')?.value || 'operacional';
+  const ms = getMensajeiras().filter(m=>m.status==='Ativo' && (m.peflex==='Premium'||m.peflex==='Certifcada'||m.peflex==='Recomenda'));
+  const filtered = cat ? ms.filter(m=>m.peflex===cat) : ms;
+
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysUntilMonday = dayOfWeek===0 ? 1 : (8-dayOfWeek)%7 || 7;
+  const nextMonday = new Date(today);
+  nextMonday.setDate(today.getDate() + daysUntilMonday);
+
+  let added = 0;
+  filtered.slice(0,15).forEach((m, i)=>{
+    const d = new Date(nextMonday);
+    d.setDate(d.getDate() + Math.floor(i/3)*7 + (i%3)*2);
+    while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1);
+    const dateStr = d.toISOString().split('T')[0];
+    if(!agendaVisitas.find(a=>a.nome===m.nome && a.data===dateStr)){
+      agendaVisitas.unshift({
+        id: avuid(), nome: m.nome, data: dateStr, tipo,
+        hora:'09:00', status:'agendada', resp:'Vini',
+        pauta:'Visita ' + tipo + ' — sugestão automática', end:'',
+      });
+      added++;
+    }
+  });
+  saveAgendaVisitas();
+  renderSugestaoAgenda();
+  renderAgendaVisitas();
+  showToast('✅ ' + added + ' visitas agendadas!');
+}
 </script>
 
 <!-- ══════════════════════════════════════════════════
