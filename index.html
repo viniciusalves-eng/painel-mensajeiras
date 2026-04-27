@@ -761,9 +761,14 @@ function showTab(tab, btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   btn.classList.add('active');
-  if(tab==='mensajeiras') renderMs();
-  if(tab==='negativa') renderNegativa();
+  if(tab==='mensajeiras'){ renderMs(); }
+  if(tab==='negativa'){ renderNegativa(); }
   if(tab==='visitas'){ updateTranspStats(); }
+  if(tab==='plano'){ initPlanoTab(); }
+  if(tab==='gestao'){
+    document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
+    document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -1368,6 +1373,314 @@ seedOperacoes();
 updateTranspStats();
 renderMs();
 document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+
+
+// ══════════════════════════════════════════════════════
+// PLANO DE AÇÃO MODULE (restored)
+// ══════════════════════════════════════════════════════
+
+const PLANO_TRANSP_CFG = {
+  j3:       {name:'J3 Flex',          color:'#E8A020', icon:'⭐', peflex:'Premium'},
+  tm:       {name:'TM Logística',     color:'#9B59B6', icon:'⭐', peflex:'Premium'},
+  flexboys: {name:'Flexboys',         color:'#3483FA', icon:'⭐', peflex:'Premium'},
+  vitom:    {name:'Vitom Log',        color:'#C0392B', icon:'⭐', peflex:'Premium'},
+  mineiro:  {name:'Mineiro Express',  color:'#C0392B', icon:'🔴', peflex:'Certificada'},
+  bibi:     {name:'Bibi Flex',        color:'#00A650', icon:'✅', peflex:'Certificada'},
+  sonic:    {name:'Sonic',            color:'#FF7733', icon:'✅', peflex:'Certificada'},
+  sos:      {name:'SOS Entregas',     color:'#3483FA', icon:'✅', peflex:'Certificada'},
+  pex:      {name:'Pex',             color:'#9B59B6', icon:'✅', peflex:'Certificada'},
+  nobres:   {name:'Nobres Entregas',  color:'#E8A020', icon:'✅', peflex:'Certificada'},
+  m10:      {name:'M10',             color:'#00A650', icon:'✅', peflex:'Certificada'},
+  outra:    {name:'Outra',           color:'#9E9E9E', icon:'📦', peflex:''},
+};
+
+// Seed J3 Flex plano
+(function seedJ3(){
+  if(planos.find(p=>p.id==='j3-plano-w17-2026')) return;
+  planos.push({
+    id:'j3-plano-w17-2026', transp:'j3', semana:'2026-W17',
+    sla:'97,56%', meta:'99%', var:'-1,44%', status:'ofensora',
+    problemas:'SLA abaixo da meta\nFalhas no horário pós-21h\nVolume de devoluções elevado',
+    acoes:'Reunião operacional semanal | Revisão de rotas | Reforço de equipe | Treinamento motoristas | Ajuste corte',
+    img:'', obs:'Acompanhar evolução semana a semana', resp:'Vini',
+  });
+  savePlanos();
+})();
+
+// Seed Mineiro Express plano
+(function seedMineiro(){
+  if(planos.find(p=>p.id==='mineiro-plano-abril-2026')) return;
+  planos.push({
+    id:'mineiro-plano-abril-2026', transp:'mineiro', semana:'2026-W17',
+    sla:'', meta:'98%', var:'', status:'ofensora',
+    problemas:'Oscilação operacional com quedas fortes\nVolume alto derruba SLA\nRoteirização ineficiente',
+    acoes:'Corte rígido | Cut-off fixo 12h. D+1 automático | Operação | Imediato\nSeparação antecipada | Ondas 10h/12h | Operação | 2 dias\nRoteirização inteligente | Limite 25-30 pacotes/moto | Torre | 3 dias\nMoto coringa | 1-2 motos resgate às 16h | Operação | Imediato\nControle em tempo real | Monitorar às 14h, 16h, 18h | Torre | Imediato',
+    img:'', obs:'Meta: Sem.1 → 96% | Sem.2 → 97,5% | Sem.3 → 98% consistente', resp:'Vini',
+  });
+  savePlanos();
+})();
+
+let selectedPlanoTransp2 = null;
+let slaChartInstance = null;
+
+function initPlanoTab(){
+  renderPlanoCards();
+  renderPlanoStats();
+  populatePlanoSemanas();
+  setTimeout(initSlaChart, 100);
+}
+
+function populatePlanoSemanas(){
+  const sel = document.getElementById('plano-filter-semana');
+  if(!sel) return;
+  const semanas = [...new Set(planos.map(p=>p.semana).filter(Boolean))].sort().reverse();
+  sel.innerHTML = '<option value="">Todas as semanas</option>';
+  semanas.forEach(s=>{ const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o); });
+}
+
+function filterPlanoCards(){
+  const q = (document.getElementById('plano-search')?.value||'').toLowerCase();
+  const fs = document.getElementById('plano-filter-status')?.value||'';
+  const fw = document.getElementById('plano-filter-semana')?.value||'';
+  const transpWithPlanos = [...new Set(planos.map(p=>p.transp))];
+  const allT = [...new Set([...transpWithPlanos,'j3','tm','flexboys','vitom','mineiro','bibi','sonic','sos','pex','nobres','m10'])];
+  allT.forEach(t=>{
+    const cfg = PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
+    const tp = planos.filter(p=>p.transp===t).sort((a,b)=>(b.semana||'').localeCompare(a.semana||''));
+    const latest = tp[0];
+    const card = document.getElementById('ptc-'+t);
+    if(!card) return;
+    const matchQ = !q || cfg.name.toLowerCase().includes(q);
+    const matchS = !fs || (fs==='sem'?!latest:latest?.status===fs);
+    const matchW = !fw || tp.some(p=>p.semana===fw);
+    card.style.display = (matchQ && matchS && matchW) ? '' : 'none';
+  });
+}
+
+function renderPlanoStats(){
+  const el = document.getElementById('plano-stats');
+  if(!el) return;
+  const ofensoras = planos.filter(p=>p.status==='ofensora').length;
+  const atencao   = planos.filter(p=>p.status==='atencao').length;
+  const ok        = planos.filter(p=>p.status==='ok').length;
+  el.innerHTML = `
+    <div style="background:#FDECEA;border:1.5px solid #F5B7B1;border-radius:10px;padding:12px 14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#C0392B">${ofensoras}</div>
+      <div style="font-size:11px;color:#C0392B;font-weight:700;text-transform:uppercase">🔴 Ofensoras</div>
+    </div>
+    <div style="background:#FFF8DC;border:1.5px solid #F9E79F;border-radius:10px;padding:12px 14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#8B6914">${atencao}</div>
+      <div style="font-size:11px;color:#8B6914;font-weight:700;text-transform:uppercase">🟡 Atenção</div>
+    </div>
+    <div style="background:#E6F7EE;border:1.5px solid #A9DFBF;border-radius:10px;padding:12px 14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#006E35">${ok}</div>
+      <div style="font-size:11px;color:#006E35;font-weight:700;text-transform:uppercase">🟢 OK</div>
+    </div>
+    <div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:10px;padding:12px 14px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#333">${planos.length}</div>
+      <div style="font-size:11px;color:#666;font-weight:700;text-transform:uppercase">Total planos</div>
+    </div>`;
+}
+
+function renderPlanoCards(){
+  const grid = document.getElementById('plano-transp-grid');
+  if(!grid) return;
+  const transpWithPlanos = [...new Set(planos.map(p=>p.transp))];
+  const allT = [...new Set([...transpWithPlanos,'j3','tm','flexboys','vitom','mineiro','bibi','sonic','sos','pex','nobres','m10'])];
+  let h = '';
+  allT.forEach(t=>{
+    const cfg = PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
+    const tp = planos.filter(p=>p.transp===t).sort((a,b)=>(b.semana||'').localeCompare(a.semana||''));
+    const latest = tp[0];
+    const statusColor = {ofensora:'#C0392B',atencao:'#E8A020',ok:'#00A650'}[latest?.status]||'#9E9E9E';
+    const statusIcon = {ofensora:'🔴',atencao:'🟡',ok:'🟢'}[latest?.status]||'⬜';
+    h += `<div class="t-card" id="ptc-${t}" onclick="selectPlanoTransp('${t}')" style="border-left:3px solid ${cfg.color}">
+      <div class="t-icon" style="background:${cfg.color}22;color:${cfg.color}">${cfg.icon}</div>
+      <div class="t-info">
+        <div class="t-name">${cfg.name}</div>
+        <div class="t-sub">${tp.length} plano${tp.length!==1?'s':''} · ${cfg.peflex||'Outras'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:18px">${statusIcon}</div>
+        ${latest?.sla?`<div style="font-size:11px;font-weight:700;color:${statusColor}">${latest.sla}</div>`:''}
+      </div>
+    </div>`;
+  });
+  grid.innerHTML = h;
+}
+
+function selectPlanoTransp(t){
+  selectedPlanoTransp = t;
+  document.querySelectorAll('[id^="ptc-"]').forEach(c=>c.classList.remove('active-t'));
+  const card = document.getElementById('ptc-'+t);
+  if(card) card.classList.add('active-t');
+  renderPlanoDetail(t);
+  const sel = document.getElementById('plano-chart-transp');
+  if(sel){ sel.value=t; renderSlaChart && renderSlaChart(); }
+}
+
+function renderPlanoDetail(t){
+  const area = document.getElementById('plano-detail-area');
+  if(!area) return;
+  const cfg = PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
+  const tp = planos.filter(p=>p.transp===t).sort((a,b)=>(b.semana||'').localeCompare(a.semana||''));
+  if(!tp.length){
+    area.innerHTML = `<div style="text-align:center;padding:40px;background:#fff;border-radius:14px;border:1.5px dashed #E0E0E0;color:#9E9E9E">
+      <div style="font-size:36px;margin-bottom:8px">${cfg.icon}</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px">${cfg.name}</div>
+      <p style="font-size:13px">Nenhum plano registrado. Clique em "+ Novo Plano" para adicionar.</p>
+    </div>`;
+    return;
+  }
+  let h = '';
+  tp.forEach(p=>{
+    const sc = {ofensora:{bg:'#FDECEA',color:'#C0392B',icon:'🔴'},atencao:{bg:'#FFF8DC',color:'#8B6914',icon:'🟡'},ok:{bg:'#E6F7EE',color:'#006E35',icon:'🟢'}}[p.status]||{bg:'#F5F5F5',color:'#555',icon:'⬜'};
+    const acoes = (p.acoes||'').split('\n').filter(Boolean);
+    h += `<div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:14px;padding:18px;margin-bottom:14px;border-left:4px solid ${cfg.color}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:15px;font-weight:800;color:#333">${cfg.icon} ${cfg.name}</div>
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${sc.bg};color:${sc.color}">${sc.icon} ${p.status||'—'}</span>
+          ${p.semana?`<span style="font-size:11px;color:#9E9E9E">${p.semana}</span>`:''}
+        </div>
+        <div style="display:flex;gap:6px">
+          ${p.sla?`<div style="text-align:center;background:#F5F5F5;border-radius:8px;padding:6px 10px"><div style="font-size:16px;font-weight:900;color:#333">${p.sla}</div><div style="font-size:10px;color:#666">SLA</div></div>`:''}
+          ${p.meta?`<div style="text-align:center;background:#E6F7EE;border-radius:8px;padding:6px 10px"><div style="font-size:16px;font-weight:900;color:#006E35">${p.meta}</div><div style="font-size:10px;color:#006E35">Meta</div></div>`:''}
+          <button onclick="openPlanoForm('${t}','${p.id}')" style="background:none;border:1.5px solid #E0E0E0;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:700;font-family:var(--font)">✎ Editar</button>
+          <button onclick="deletePlano('${p.id}')" style="background:#FDECEA;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;color:#C0392B;font-family:var(--font)">✕</button>
+        </div>
+      </div>
+      ${p.problemas?`<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#9E9E9E;margin-bottom:4px">Problemas</div><div style="font-size:13px;color:#555;white-space:pre-wrap;line-height:1.6">${esc(p.problemas)}</div></div>`:''}
+      ${acoes.length?`<div><div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#9E9E9E;margin-bottom:6px">Ações</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#F5F5F5"><th style="padding:6px 10px;text-align:left;border-bottom:1px solid #E0E0E0">Ação</th><th style="padding:6px 10px;text-align:left;border-bottom:1px solid #E0E0E0;width:100px">Área</th><th style="padding:6px 10px;text-align:left;border-bottom:1px solid #E0E0E0;width:80px">Prazo</th></tr></thead>
+          <tbody>${acoes.map(a=>{ const parts=a.split('|'); return `<tr style="border-bottom:1px solid #F5F5F5"><td style="padding:6px 10px">${esc(parts[0]||'')}${parts[1]?'<div style="font-size:11px;color:#9E9E9E">'+esc(parts[1])+'</div>':''}</td><td style="padding:6px 10px;color:#666">${esc(parts[2]||'')}</td><td style="padding:6px 10px;color:#666">${esc(parts[3]||'')}</td></tr>`; }).join('')}</tbody>
+        </table></div>`:''}
+      ${p.obs?`<div style="margin-top:10px;background:#F5F5F5;border-radius:8px;padding:8px 10px;font-size:12px;color:#555">${esc(p.obs)}</div>`:''}
+    </div>`;
+  });
+  area.innerHTML = h;
+}
+
+function openPlanoForm(transp, planoId){
+  editingPlanoId = planoId||null;
+  const p = planoId ? planos.find(x=>x.id===planoId) : null;
+  const overlay = document.getElementById('plano-form-overlay');
+  if(!overlay) return;
+  document.getElementById('pf-transp').value = transp||(p?.transp||'j3');
+  document.getElementById('pf-semana').value = p?.semana||'';
+  document.getElementById('pf-sla').value    = p?.sla||'';
+  document.getElementById('pf-meta').value   = p?.meta||'99%';
+  document.getElementById('pf-var').value    = p?.var||'';
+  document.getElementById('pf-status').value = p?.status||'ofensora';
+  document.getElementById('pf-problemas').value = p?.problemas||'';
+  document.getElementById('pf-acoes').value  = p?.acoes||'';
+  document.getElementById('pf-obs').value    = p?.obs||'';
+  document.getElementById('pf-resp').value   = p?.resp||'Vini';
+  overlay.classList.add('open');
+}
+
+function closePlanoForm(){ document.getElementById('plano-form-overlay')?.classList.remove('open'); editingPlanoId=null; }
+
+function savePlanoForm(){
+  const transp = document.getElementById('pf-transp').value;
+  const semana = document.getElementById('pf-semana').value.trim();
+  if(!transp){ alert('Selecione a transportadora'); return; }
+  const obj = {
+    id: editingPlanoId||puid(), transp, semana,
+    sla:      document.getElementById('pf-sla').value.trim(),
+    meta:     document.getElementById('pf-meta').value.trim(),
+    var:      document.getElementById('pf-var').value.trim(),
+    status:   document.getElementById('pf-status').value,
+    problemas:document.getElementById('pf-problemas').value.trim(),
+    acoes:    document.getElementById('pf-acoes').value.trim(),
+    obs:      document.getElementById('pf-obs').value.trim(),
+    resp:     document.getElementById('pf-resp').value.trim(),
+    img:'',
+  };
+  if(editingPlanoId){ const i=planos.findIndex(x=>x.id===editingPlanoId); planos[i]=obj; }
+  else planos.unshift(obj);
+  savePlanos();
+  closePlanoForm();
+  renderPlanoCards();
+  renderPlanoStats();
+  populatePlanoSemanas();
+  if(selectedPlanoTransp) renderPlanoDetail(selectedPlanoTransp);
+  showToast('Plano salvo!');
+}
+
+function deletePlano(id){
+  if(!confirm('Excluir este plano?')) return;
+  planos = planos.filter(p=>p.id!==id);
+  savePlanos();
+  renderPlanoCards();
+  renderPlanoStats();
+  if(selectedPlanoTransp) renderPlanoDetail(selectedPlanoTransp);
+  showToast('Removido');
+}
+
+function exportPlanos(){
+  const cols = [{label:'Transportadora',key:'transp'},{label:'Semana',key:'semana'},
+    {label:'SLA',key:'sla'},{label:'Meta',key:'meta'},{label:'Var',key:'var'},
+    {label:'Status',key:'status'},{label:'Obs',key:'obs'},{label:'Resp',key:'resp'}];
+  const rows = planos.map(r=>cols.map(c=>{const v=(r[c.key]||'').toString().replace(/"/g,'\"').replace(/\n/g,' ');return v.includes(',')? '"'+v+'"':v;}).join(','));
+  const csv = [cols.map(c=>c.label).join(','),...rows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');a.href=url;a.download='planos_acao.csv';a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado!');
+}
+
+// SLA Chart
+function initSlaChart(){
+  const sel = document.getElementById('plano-chart-transp');
+  if(!sel) return;
+  const transpWithPlanos = [...new Set(planos.map(p=>p.transp))].filter(t=>planos.filter(p=>p.transp===t&&p.sla).length>1);
+  const cur = sel.value;
+  sel.innerHTML='<option value="">Selecione a transportadora</option>';
+  transpWithPlanos.forEach(t=>{
+    const cfg=PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
+    const o=document.createElement('option');o.value=t;o.textContent=cfg.name;sel.appendChild(o);
+  });
+  if(cur) sel.value=cur;
+  const section = document.getElementById('plano-chart-section');
+  if(section) section.style.display = transpWithPlanos.length>0 ? '' : 'none';
+  if(sel.value) renderSlaChart();
+  else if(transpWithPlanos.length===1){ sel.value=transpWithPlanos[0]; renderSlaChart(); }
+  if(selectedPlanoTransp && transpWithPlanos.includes(selectedPlanoTransp)){
+    sel.value = selectedPlanoTransp; renderSlaChart();
+  }
+}
+
+function renderSlaChart(){
+  const t = document.getElementById('plano-chart-transp')?.value;
+  if(!t){ if(slaChartInstance){slaChartInstance.destroy();slaChartInstance=null;} return; }
+  const cfg = PLANO_TRANSP_CFG[t]||PLANO_TRANSP_CFG.outra;
+  const tp = planos.filter(p=>p.transp===t&&p.sla).sort((a,b)=>(a.semana||'').localeCompare(b.semana||''));
+  if(!tp.length) return;
+  const labels = tp.map(p=>p.semana||'');
+  const data   = tp.map(p=>parseFloat((p.sla||'0').replace(',','.')));
+  const meta   = tp.map(p=>parseFloat((p.meta||'99').replace('%','').replace(',','.')));
+  const canvas = document.getElementById('sla-chart');
+  if(!canvas) return;
+  if(slaChartInstance){ slaChartInstance.destroy(); }
+  slaChartInstance = new Chart(canvas,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:cfg.name+' — SLA',data,borderColor:cfg.color,backgroundColor:cfg.color+'22',
+       borderWidth:2.5,pointRadius:5,pointBackgroundColor:data.map((v,i)=>v>=(meta[i]||99)?'#00A650':'#C0392B'),
+       pointBorderColor:'#fff',pointBorderWidth:2,tension:.35,fill:true},
+      {label:'Meta',data:meta,borderColor:'#FFE600',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{font:{family:'Nunito',size:12},boxWidth:14}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{family:'Nunito',size:11}}},
+        y:{min:Math.max(85,Math.min(...data)-2),max:100,grid:{color:'#f0f0f0'},
+           ticks:{font:{family:'Nunito',size:11},callback:v=>v+'%'}}}}
+  });
+}
 
 // ══════════════════════════════════════════════════════
 // SITE SWITCHER — Visual only, MLB/MLM separate storage
