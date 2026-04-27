@@ -1210,6 +1210,18 @@ const SITE_KEYS = {
   agenda:    'vini26_agenda_visitas_v1',
 };
 
+
+// Pre-declarations for site module (avoid TDZ errors)
+let gestaoAcoes   = [];
+let comunicados   = [];
+let planos        = [];
+let agendaVisitas = [];
+let editingGaId   = null;
+let editingComId  = null;
+let editingAgendaId = null;
+let editingPlanoId  = null;
+let selectedPlanoTransp = null;
+
 // Load all data for current site
 function loadSiteData(){
   const site = currentSite;
@@ -1409,8 +1421,8 @@ document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('
 // ══════════════════════════════════════════════════════
 const GA_SK  = 'vini26_gestao_acoes_v1';
 const COM_SK = 'vini26_comunicados_v1';
-let gestaoAcoes   = JSON.parse(localStorage.getItem(GA_SK)  || '[]');
-let comunicados   = JSON.parse(localStorage.getItem(COM_SK) || '[]');
+gestaoAcoes = JSON.parse(localStorage.getItem(GA_SK)  || '[]');
+comunicados = JSON.parse(localStorage.getItem(COM_SK) || '[]');
 
 // Seed comunicado oficial validação automática
 (function(){
@@ -1466,8 +1478,6 @@ Mercado Livre`,
     localStorage.setItem(COM_SK, JSON.stringify(comunicados));
   }
 })();
-let editingGaId   = null;
-let editingComId  = null;
 
 function saveGestaoAcoes(){ localStorage.setItem(GA_SK,  JSON.stringify(gestaoAcoes)); }
 function saveComunicados(){ localStorage.setItem(COM_SK, JSON.stringify(comunicados)); }
@@ -1648,9 +1658,8 @@ showTab = function(tab, btn){
 // PLANO DE AÇÃO MODULE
 // ══════════════════════════════════════════════════════
 const PLANO_SK = 'vini26_planos_v1';
-let planos = JSON.parse(localStorage.getItem(PLANO_SK) || '[]');
-let editingPlanoId = null;
-let selectedPlanoTransp = null;
+planos = JSON.parse(localStorage.getItem(PLANO_SK) || '[]');
+
 
 function savePlanos(){ localStorage.setItem(PLANO_SK, JSON.stringify(planos)); }
 function puid(){ return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
@@ -2141,8 +2150,8 @@ function filterVisitas(){
 // AGENDA DE VISITAS MODULE
 // ══════════════════════════════════════════════════════
 const AGENDA_SK = 'vini26_agenda_visitas_v1';
-let agendaVisitas = JSON.parse(localStorage.getItem(AGENDA_SK) || '[]');
-let editingAgendaId = null;
+agendaVisitas = JSON.parse(localStorage.getItem(AGENDA_SK) || '[]');
+
 
 function saveAgendaVisitas(){ localStorage.setItem(AGENDA_SK, JSON.stringify(agendaVisitas)); }
 function avuid(){ return 'av'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
