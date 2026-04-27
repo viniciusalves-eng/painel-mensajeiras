@@ -223,8 +223,7 @@ header{background:var(--yellow);padding:0 24px;height:56px;display:flex;align-it
 .gestao-tab-btn{font-family:var(--font);font-size:13px;font-weight:700;padding:7px 16px;border-radius:20px;border:2px solid var(--gray2);background:#fff;cursor:pointer;color:var(--text2);transition:all .15s}
 .gestao-tab-btn:hover{border-color:var(--blue);color:var(--blue)}
 .gestao-tab-btn.active{background:var(--yellow);border-color:#E6CF00;color:var(--text)}
-.gestao-tab-content{display:none;animation:fadeUp .2s ease}
-.gestao-tab-content.active-gs{display:block}
+.gestao-tab-content{animation:fadeUp .2s ease}
 
 </style>
 </head>
@@ -1347,6 +1346,11 @@ function switchSite(site, btn){
     if(tabId==='plano'){ initPlanoTab(); }
   }
 
+  // Re-init gestao if active
+  if(document.getElementById('tab-gestao')?.classList.contains('active')){
+    document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
+    document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  }
   showToast('Site alterado para ' + site + ' 🌎');
 }
 
@@ -1415,19 +1419,15 @@ updateTranspStats();
 renderMs();
 // Gestão é a primeira aba — inicializar sub-abas corretamente
 (function initGestaoTab(){
-  const contents = document.querySelectorAll('.gestao-tab-content');
-  const btns = document.querySelectorAll('.gestao-tab-btn');
-  contents.forEach((el,i) => {
-    el.classList.remove('active-gs');
-    el.style.display = 'none';
+  // Hide all sub-tabs
+  document.querySelectorAll('.gestao-tab-content').forEach(el=>el.style.display='none');
+  // Activate first button
+  document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', i===0);
   });
-  btns.forEach((b,i) => {
-    b.classList.remove('active');
-    if(i===0) b.classList.add('active');
-  });
-  // Show first tab (peflex)
+  // Show first sub-tab (peflex)
   const first = document.getElementById('gt-peflex');
-  if(first){ first.classList.add('active-gs'); first.style.display = 'block'; }
+  if(first) first.style.display = 'block';
 })();
 
 // ══════════════════════════════════════════════════════
@@ -1508,13 +1508,10 @@ const TIPO_CFG = {
 };
 
 function showGestaoTab(tab, btn){
-  document.querySelectorAll('.gestao-tab-content').forEach(el=>{
-    el.classList.remove('active-gs');
-    el.style.display='';
-  });
+  document.querySelectorAll('.gestao-tab-content').forEach(el=>el.style.display='none');
   document.querySelectorAll('.gestao-tab-btn').forEach(b=>b.classList.remove('active'));
   const el = document.getElementById('gt-'+tab);
-  if(el){ el.classList.add('active-gs'); el.style.display='block'; }
+  if(el) el.style.display='block';
   btn.classList.add('active');
   if(tab==='acoes') renderGestaoAcoes();
   if(tab==='comunicados') renderComunicados();
@@ -1664,10 +1661,7 @@ const _origShowTab2 = showTab;
 showTab = function(tab, btn){
   _origShowTab2(tab, btn);
   if(tab==='gestao'){
-    document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>{
-      el.classList.toggle('active-gs', i===0);
-      el.style.display = i===0 ? 'block' : 'none';
-    });
+    document.querySelectorAll('.gestao-tab-content').forEach((el,i)=>el.style.display=i===0?'block':'none');
     document.querySelectorAll('.gestao-tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
   }
 };
@@ -2403,7 +2397,7 @@ function deleteAgendaVisita(id){
   </div>
 
   <!-- ── PEFLEX 3.0 ── -->
-  <div id="gt-peflex" class="gestao-tab-content active">
+  <div id="gt-peflex" class="gestao-tab-content" style="display:block">
 
     <!-- Modalidades -->
     <div style="font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span>🏅</span> Modalidades PeFlex 3.0</div>
