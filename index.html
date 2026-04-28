@@ -1921,13 +1921,36 @@ function deleteAgendaVisita(id){
 // ESCALA DE VISITAS — Homologadas & Premium
 // ══════════════════════════════════════════════════════
 
+// Escala recusadas — persiste entre sessões
+const ESCALA_RECUSADAS_SK = 'vini26_escala_recusadas_v1';
+let escalaRecusadas = new Set(JSON.parse(localStorage.getItem(ESCALA_RECUSADAS_SK)||'[]'));
+
+function saveEscalaRecusadas(){
+  localStorage.setItem(ESCALA_RECUSADAS_SK, JSON.stringify([...escalaRecusadas]));
+}
+
+function recusarEscala(nome, data){
+  const key = nome + '|' + data;
+  escalaRecusadas.add(key);
+  saveEscalaRecusadas();
+  renderEscalaVisitas();
+  showToast('❌ Visita recusada');
+}
+
+function restaurarEscala(nome, data){
+  const key = nome + '|' + data;
+  escalaRecusadas.delete(key);
+  saveEscalaRecusadas();
+  renderEscalaVisitas();
+  showToast('✅ Visita restaurada');
+}
+
 function showSugestaoAgenda(){
   const panel = document.getElementById('sugestao-agenda-panel');
   if(!panel) return;
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : 'block';
   if(!visible){
-    // Set default month to current
     const mes = document.getElementById('escala-mes');
     if(mes && !mes.value){
       const now = new Date();
@@ -2012,7 +2035,11 @@ function renderEscalaVisitas(){
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px">`;
 
-    visits.forEach(({ms: m2, date}) => {
+    // Filter out recusadas from display
+    const visitsToShow = visits.filter(({ms: m2, date}) => !escalaRecusadas.has(m2.nome+'|'+date));
+    const recusadasCount = visits.length - visitsToShow.length;
+
+    visitsToShow.forEach(({ms: m2, date}) => {
       const isPremium = m2.peflex==='Premium';
       const cor = isPremium
         ? {bg:'#FFF3E8',border:'#E8A020',badge:'#A0522D',badgeBg:'#FFF3E8',icon:'⭐'}
@@ -2020,7 +2047,8 @@ function renderEscalaVisitas(){
       const already = agendaVisitas.find(a=>a.nome===m2.nome && a.data===date);
       const [y,mo,d2] = date.split('-');
       const dateLabel = `${d2}/${mo}/${y}`;
-      html += `<div style="background:${cor.bg};border:1.5px solid ${already?'#3483FA':cor.border};border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:10px">
+      const nomeEsc = m2.nome.replace(/'/g,"\\'");
+      html += `<div style="background:${cor.bg};border:1.5px solid ${already?'#3483FA':cor.border};border-radius:10px;padding:11px 13px;display:flex;align-items:center;gap:8px">
         <div style="flex-shrink:0;font-size:18px">${cor.icon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12px;font-weight:800;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m2.nome)}</div>
@@ -2030,15 +2058,29 @@ function renderEscalaVisitas(){
             <span style="font-size:11px">${icon}</span>
           </div>
         </div>
-        ${already
-          ? '<span style="font-size:10px;font-weight:700;color:#3483FA;white-space:nowrap;flex-shrink:0">✓ Agendada</span>'
-          : `<button onclick="agendarEscalaItem('${m2.nome.replace(/'/g,"\\'")}','${date}','${tipo}')"
-              style="flex-shrink:0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;border:1.5px solid #3483FA;background:#fff;color:#3483FA;cursor:pointer;font-family:var(--font);white-space:nowrap">
-              + Agendar
-            </button>`
-        }
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          ${already
+            ? '<span style="font-size:10px;font-weight:700;color:#3483FA;white-space:nowrap">✓ Agendada</span>'
+            : `<button onclick="agendarEscalaItem('${nomeEsc}','${date}','${tipo}')"
+                style="font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;border:1.5px solid #3483FA;background:#fff;color:#3483FA;cursor:pointer;font-family:var(--font);white-space:nowrap">
+                + Agendar
+              </button>`
+          }
+          <button onclick="recusarEscala('${nomeEsc}','${date}')" title="Recusar visita"
+            style="font-size:11px;font-weight:700;padding:4px 8px;border-radius:7px;border:1.5px solid #FDECEA;background:#FDECEA;color:#C0392B;cursor:pointer;font-family:var(--font);white-space:nowrap">
+            ✕
+          </button>
+        </div>
       </div>`;
     });
+
+    // Show recusadas count + restore button if any
+    if(recusadasCount > 0){
+      html += `<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;background:#F5F5F5;border-radius:8px;padding:8px 12px;margin-top:4px">
+        <span style="font-size:12px;color:#9E9E9E">🚫 ${recusadasCount} visita${recusadasCount!==1?'s':''} recusada${recusadasCount!==1?'s':''} neste mês</span>
+        <button onclick="verRecusadas()" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;border:1px solid #E0E0E0;background:#fff;color:#555;cursor:pointer;font-family:var(--font)">Ver recusadas</button>
+      </div>`;
+    }
     html += `</div></div>`;
   }
   document.getElementById('sugestao-board').innerHTML = html;
@@ -2104,6 +2146,49 @@ function agendarEscalaCompleta(){
   showToast('✅ '+added+' visitas agendadas na escala!');
 }
 
+
+
+function verRecusadas(){
+  const allMs = getMensajeiras().filter(m=>m.status==='Ativo');
+  const recusadas = [...escalaRecusadas].map(key=>{
+    const [nome, data] = key.split('|');
+    const ms2 = allMs.find(m=>m.nome===nome);
+    return {nome, data, peflex: ms2?.peflex||'—'};
+  }).sort((a,b)=>a.data.localeCompare(b.data));
+
+  if(!recusadas.length){ showToast('Nenhuma visita recusada'); return; }
+
+  // Simple modal listing recusadas
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay open';
+  overlay.onclick = e=>{ if(e.target===overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="form-modal" style="max-width:480px">
+      <h2>🚫 Visitas Recusadas</h2>
+      <div class="form-body" style="max-height:400px;overflow-y:auto">
+        ${recusadas.map(r=>{
+          const [y,mo,d2]=r.data.split('-');
+          const nomeEsc = r.nome.replace(/'/g,"\'");
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #F5F5F5">
+            <span style="font-size:14px">${r.peflex==='Premium'?'⭐':'✅'}</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700">${esc(r.nome)}</div>
+              <div style="font-size:11px;color:#666">📅 ${d2}/${mo}/${y}</div>
+            </div>
+            <button onclick="restaurarEscala('${nomeEsc}','${r.data}');this.closest('.overlay').remove();"
+              style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;border:1.5px solid #00A650;background:transparent;color:#006E35;cursor:pointer;font-family:var(--font)">
+              ↩ Restaurar
+            </button>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-outline" onclick="this.closest('.overlay').remove()">Fechar</button>
+        <button class="btn" style="background:#C0392B;color:#fff" onclick="if(confirm('Limpar todas as recusadas?')){escalaRecusadas.clear();saveEscalaRecusadas();this.closest('.overlay').remove();renderEscalaVisitas();}">🗑 Limpar todas</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
 
 // Alias for backward compatibility
 function renderSugestaoAgenda(){ renderEscalaVisitas(); }
