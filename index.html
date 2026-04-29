@@ -1380,6 +1380,38 @@ const COM_SK = 'vini26_comunicados_v1';
 gestaoAcoes  = JSON.parse(localStorage.getItem(GA_SK)  || '[]');
 comunicados  = JSON.parse(localStorage.getItem(COM_SK) || '[]');
 
+// Seed ações realizadas
+(function seedGestaoAcoes(){
+  const seeds = [
+    {
+      id: 'ga-rnd-cadastro-2026',
+      title: 'Cadastro RND — concluído, aguardando contrato',
+      desc: 'Cadastro da transportadora RND foi criado com sucesso. Próximo passo: enviar o contrato para a transportadora para assinatura.',
+      resp: 'Vini',
+      status: 'andamento',
+      data: '2026-04-28',
+      prazo: '',
+    },
+    {
+      id: 'ga-flexboys-premium-2026',
+      title: 'Flexboys — finalização de cadastro Premium',
+      desc: 'A Flexboys precisa finalizar o cadastro de Premium. Próximo passo: enviar o contrato para eles assim que o cadastro for concluído.',
+      resp: 'Vini',
+      status: 'andamento',
+      data: '2026-04-28',
+      prazo: '',
+    },
+  ];
+  let added = false;
+  seeds.forEach(seed => {
+    if(!gestaoAcoes.find(a=>a.id===seed.id)){
+      gestaoAcoes.push(seed);
+      added = true;
+    }
+  });
+  if(added) localStorage.setItem(GA_SK, JSON.stringify(gestaoAcoes));
+})();
+
 function saveGestaoAcoes(){ localStorage.setItem(GA_SK, JSON.stringify(gestaoAcoes)); }
 function saveComunicados(){ localStorage.setItem(COM_SK, JSON.stringify(comunicados)); }
 function gauid(){ return 'ga'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
