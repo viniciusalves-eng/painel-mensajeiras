@@ -2023,10 +2023,10 @@ function renderProjetos(){
   // Stats
   const statsEl = document.getElementById('proj-stats');
   if(statsEl){
-    const total = projetos.length;
-    const andamento = projetos.filter(p=>p.status==='em_andamento').length;
-    const concluido = projetos.filter(p=>p.status==='concluido').length;
-    const pausado   = projetos.filter(p=>p.status==='pausado').length;
+    const total    = projetos.length;
+    const andamento= projetos.filter(p=>p.status==='em_andamento').length;
+    const concluido= projetos.filter(p=>p.status==='concluido').length;
+    const pausado  = projetos.filter(p=>p.status==='pausado').length;
     statsEl.innerHTML = `
       <div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:10px;padding:12px 14px;text-align:center">
         <div style="font-size:24px;font-weight:800;color:#333">${total}</div>
@@ -2034,7 +2034,7 @@ function renderProjetos(){
       </div>
       <div style="background:#FFF8DC;border:1.5px solid #F9E79F;border-radius:10px;padding:12px 14px;text-align:center">
         <div style="font-size:24px;font-weight:800;color:#8B6914">${andamento}</div>
-        <div style="font-size:11px;color:#8B6914;font-weight:700;text-transform:uppercase">🟡 Em andamento</div>
+        <div style="font-size:11px;color:#8B6914;font-weight:700;text-transform:uppercase">🟡 Andamento</div>
       </div>
       <div style="background:#E6F7EE;border:1.5px solid #A9DFBF;border-radius:10px;padding:12px 14px;text-align:center">
         <div style="font-size:24px;font-weight:800;color:#006E35">${concluido}</div>
@@ -2046,7 +2046,6 @@ function renderProjetos(){
       </div>`;
   }
 
-  // Board
   const board = document.getElementById('proj-board');
   if(!board) return;
 
@@ -2055,20 +2054,18 @@ function renderProjetos(){
   const ft = document.getElementById('proj-filter-tipo')?.value||'';
 
   const filtered = projetos.filter(p=>{
-    const mq = !q || (p.title||'').toLowerCase().includes(q) || (p.ms||'').toLowerCase().includes(q) || (p.desc||'').toLowerCase().includes(q);
-    const ms2 = !fs || p.status===fs;
-    const mt  = !ft || p.tipo===ft;
-    return mq && ms2 && mt;
+    const mq=!q||(p.title||'').toLowerCase().includes(q)||(p.ms||'').toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q);
+    const ms2=!fs||p.status===fs;
+    const mt=!ft||p.tipo===ft;
+    return mq&&ms2&&mt;
   }).sort((a,b)=>{
-    // Sort: em_andamento first, then by prazo
-    const order = {em_andamento:0,pausado:1,concluido:2,cancelado:3};
-    const oa = order[a.status]??9, ob = order[b.status]??9;
-    if(oa !== ob) return oa - ob;
-    return (a.prazo||'').localeCompare(b.prazo||'');
+    const order={em_andamento:0,pausado:1,concluido:2,cancelado:3};
+    const diff=(order[a.status]??9)-(order[b.status]??9);
+    return diff!==0?diff:(a.prazo||'zz').localeCompare(b.prazo||'zz');
   });
 
   if(!filtered.length){
-    board.innerHTML = `<div style="text-align:center;padding:48px;background:#fff;border-radius:14px;border:1.5px dashed #E0E0E0;color:#9E9E9E">
+    board.innerHTML=`<div style="text-align:center;padding:48px;background:#fff;border-radius:14px;border:1.5px dashed #E0E0E0;color:#9E9E9E">
       <div style="font-size:40px;margin-bottom:10px">🚀</div>
       <div style="font-weight:800;font-size:16px;margin-bottom:4px">Nenhum projeto registrado</div>
       <p style="font-size:13px">Clique em "+ Novo Projeto" para começar</p>
@@ -2076,86 +2073,82 @@ function renderProjetos(){
     return;
   }
 
-  // Group by status
-  const groups = {em_andamento:[],pausado:[],concluido:[],cancelado:[]};
-  filtered.forEach(p=>{ (groups[p.status]||groups.em_andamento).push(p); });
+  // TABLE VIEW with inline status selector
+  let h=`<div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:14px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:#F5F5F5;border-bottom:2px solid #E0E0E0">
+          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:800">Projeto</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:800;min-width:140px">Mensajeira</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:800;min-width:100px">Tipo</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:800;min-width:170px">Status</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:800">Resp.</th>
+          <th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:800">Prazo</th>
+          <th style="padding:10px 14px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#666;font-weight:800;width:80px">Ações</th>
+        </tr>
+      </thead>
+      <tbody>`;
 
-  let h = '';
-  Object.entries(groups).forEach(([status, items])=>{
-    if(!items.length) return;
-    const sc = PROJ_STATUS_CFG[status]||PROJ_STATUS_CFG.em_andamento;
-    h += `<div style="margin-bottom:24px">
-      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#9E9E9E;margin-bottom:10px;display:flex;align-items:center;gap:8px">
-        <span>${sc.icon} ${sc.label}</span>
-        <span style="background:#F0F0F0;color:#666;font-size:11px;padding:1px 8px;border-radius:8px">${items.length}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">`;
+  filtered.forEach((p,i)=>{
+    const sc=PROJ_STATUS_CFG[p.status]||PROJ_STATUS_CFG.em_andamento;
+    const tc=PROJ_TIPO_CFG[p.tipo]||PROJ_TIPO_CFG.operacional;
+    const today2=new Date().toISOString().split('T')[0];
+    const isAtrasado=p.prazo&&p.prazo<today2&&p.status==='em_andamento';
+    const passos=(p.passos||'').split('\n').filter(Boolean);
+    const rowBg=i%2===0?'#fff':'#FAFAFA';
 
-    items.forEach(p=>{
-      const sc2 = PROJ_STATUS_CFG[p.status]||PROJ_STATUS_CFG.em_andamento;
-      const tc  = PROJ_TIPO_CFG[p.tipo]||PROJ_TIPO_CFG.operacional;
-      const passos = (p.passos||'').split('\n').filter(Boolean);
-      const today2 = new Date().toISOString().split('T')[0];
-      const isAtrasado = p.prazo && p.prazo < today2 && p.status==='em_andamento';
-
-      h += `<div style="background:#fff;border:1.5px solid ${isAtrasado?'#F5B7B1':sc2.border};border-radius:14px;overflow:hidden;${isAtrasado?'box-shadow:0 0 0 2px #FDECEA':''}">
-        <!-- Header -->
-        <div style="padding:14px 16px;border-bottom:1px solid #F5F5F5">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
-            <div style="flex:1">
-              <div style="font-size:14px;font-weight:800;color:#333;margin-bottom:4px;line-height:1.3">${esc(p.title)}</div>
-              <div style="font-size:13px;font-weight:700;color:#555">${esc(p.ms||'—')}</div>
-            </div>
-            <div style="display:flex;gap:4px;flex-shrink:0">
-              <button onclick="openEditProjeto('${p.id}')" style="background:#F5F5F5;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px;font-family:var(--font)">✎</button>
-              <button onclick="deleteProjeto('${p.id}')" style="background:#FDECEA;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px;color:#C0392B;font-family:var(--font)">✕</button>
-            </div>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:5px">
-            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${sc2.bg};color:${sc2.color}">${sc2.icon} ${sc2.label}</span>
-            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:#EBF3FF;color:${tc.color}">${tc.icon} ${tc.label}</span>
-            ${p.resp?`<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:#F5F5F5;color:#555">👤 ${esc(p.resp)}</span>`:''}
-            ${isAtrasado?'<span style="font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:#FDECEA;color:#C0392B">⚠️ ATRASADO</span>':''}
-          </div>
+    h+=`<tr style="border-bottom:1px solid #F0F0F0;background:${rowBg}${isAtrasado?';outline:2px solid #F5B7B1;outline-offset:-2px':''}">
+      <!-- Projeto + desc -->
+      <td style="padding:12px 14px;vertical-align:top;max-width:260px">
+        <div style="font-weight:800;color:#333;margin-bottom:3px;line-height:1.3">${esc(p.title)}</div>
+        ${p.desc?`<div style="font-size:11px;color:#888;line-height:1.5;margin-bottom:4px">${esc(p.desc.length>100?p.desc.slice(0,100)+'…':p.desc)}</div>`:''}
+        ${passos.length?`<div style="font-size:11px;color:#3483FA;font-weight:600">${passos.length} próximo${passos.length!==1?'s':''} passo${passos.length!==1?'s':''}</div>`:''}
+      </td>
+      <!-- Mensajeira -->
+      <td style="padding:12px 14px;vertical-align:top">
+        <div style="font-size:12px;font-weight:700;color:#333">${esc(p.ms||'—')}</div>
+      </td>
+      <!-- Tipo -->
+      <td style="padding:12px 14px;vertical-align:top">
+        <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;background:#EBF3FF;color:${tc.color};white-space:nowrap">${tc.icon} ${tc.label}</span>
+      </td>
+      <!-- STATUS EDITÁVEL (dropdown inline) -->
+      <td style="padding:12px 14px;vertical-align:top">
+        <select onchange="quickStatusProjeto('${p.id}',this.value)"
+          style="font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;
+                 border:1.5px solid ${sc.border};background:${sc.bg};color:${sc.color};
+                 font-family:var(--font);cursor:pointer;outline:none;width:100%">
+          <option value="em_andamento" ${p.status==='em_andamento'?'selected':''}>🟡 Em andamento</option>
+          <option value="concluido"    ${p.status==='concluido'?'selected':''}>✅ Concluído</option>
+          <option value="pausado"      ${p.status==='pausado'?'selected':''}>⏸️ Pausado</option>
+          <option value="cancelado"    ${p.status==='cancelado'?'selected':''}>❌ Cancelado</option>
+        </select>
+        ${isAtrasado?'<div style="font-size:10px;font-weight:800;color:#C0392B;margin-top:3px">⚠️ Atrasado</div>':''}
+      </td>
+      <!-- Resp -->
+      <td style="padding:12px 14px;vertical-align:top;font-size:12px;color:#555;white-space:nowrap">
+        ${p.resp?`👤 ${esc(p.resp)}`:'<span style="color:#CCC">—</span>'}
+      </td>
+      <!-- Prazo -->
+      <td style="padding:12px 14px;vertical-align:top;font-size:12px;white-space:nowrap;color:${isAtrasado?'#C0392B':'#555'}">
+        ${p.prazo?`⏰ ${fmtDate(p.prazo)}`:'<span style="color:#CCC">—</span>'}
+      </td>
+      <!-- Ações -->
+      <td style="padding:12px 14px;vertical-align:top;text-align:center">
+        <div style="display:flex;gap:4px;justify-content:center">
+          <button onclick="openEditProjeto('${p.id}')" title="Editar"
+            style="background:#F5F5F5;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:13px;font-family:var(--font)">✎</button>
+          <button onclick="deleteProjeto('${p.id}')" title="Excluir"
+            style="background:#FDECEA;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:13px;color:#C0392B;font-family:var(--font)">✕</button>
         </div>
-
-        <!-- Body -->
-        <div style="padding:12px 16px">
-          ${p.desc?`<div style="font-size:12px;color:#555;line-height:1.6;margin-bottom:10px">${esc(p.desc)}</div>`:''}
-
-          <!-- Datas -->
-          ${(p.inicio||p.prazo)?`<div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:#666">
-            ${p.inicio?`<span>🗓️ Início: <strong>${fmtDate(p.inicio)}</strong></span>`:''}
-            ${p.prazo?`<span>⏰ Prazo: <strong style="color:${isAtrasado?'#C0392B':'inherit'}">${fmtDate(p.prazo)}</strong></span>`:''}
-          </div>`:''}
-
-          <!-- Próximos passos -->
-          ${passos.length?`<div>
-            <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#9E9E9E;margin-bottom:6px">Próximos passos</div>
-            <div style="display:flex;flex-direction:column;gap:4px">
-              ${passos.slice(0,4).map(ps=>`<div style="display:flex;gap:8px;font-size:12px;color:#555;align-items:flex-start">
-                <span style="flex-shrink:0;color:#3483FA;font-weight:800;margin-top:1px">→</span>
-                <span>${esc(ps)}</span>
-              </div>`).join('')}
-              ${passos.length>4?`<div style="font-size:11px;color:#9E9E9E;margin-top:2px">+${passos.length-4} mais...</div>`:''}
-            </div>
-          </div>`:''}
-
-          <!-- Quick status change -->
-          ${p.status==='em_andamento'?`<div style="display:flex;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F5">
-            <button onclick="quickStatusProjeto('${p.id}','concluido')" style="flex:1;font-size:11px;font-weight:700;padding:5px;border-radius:7px;border:1.5px solid #00A650;background:transparent;color:#006E35;cursor:pointer;font-family:var(--font)">✅ Concluir</button>
-            <button onclick="quickStatusProjeto('${p.id}','pausado')" style="flex:1;font-size:11px;font-weight:700;padding:5px;border-radius:7px;border:1.5px solid #E0E0E0;background:transparent;color:#555;cursor:pointer;font-family:var(--font)">⏸️ Pausar</button>
-          </div>`:''}
-          ${p.status==='pausado'?`<div style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F5">
-            <button onclick="quickStatusProjeto('${p.id}','em_andamento')" style="width:100%;font-size:11px;font-weight:700;padding:5px;border-radius:7px;border:1.5px solid #3483FA;background:transparent;color:#3483FA;cursor:pointer;font-family:var(--font)">▶️ Retomar projeto</button>
-          </div>`:''}
-        </div>
-      </div>`;
-    });
-    h += `</div></div>`;
+      </td>
+    </tr>`;
   });
-  board.innerHTML = h;
+
+  h+=`</tbody></table></div>`;
+  board.innerHTML=h;
 }
+
 
 function quickStatusProjeto(id, status){
   const p = projetos.find(x=>x.id===id);
@@ -3265,6 +3258,51 @@ function agendarTodasSugestoes(){ agendarEscalaCompleta(); }
     </div>
 
   </div>
+
+  <!-- ── PROJETOS ── -->
+  <div id="gt-projetos" class="gestao-tab-content" style="display:none">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px">🚀 Projetos com Transportadoras</div>
+        <div style="font-size:12px;color:#9E9E9E;margin-top:2px">Iniciativas e projetos em andamento com as mensajeiras</div>
+      </div>
+      <button onclick="openAddProjeto()" style="background:#3483FA;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;font-family:var(--font);font-size:13px">+ Novo Projeto</button>
+    </div>
+
+    <!-- Filtros -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+      <div style="position:relative;flex:1;min-width:200px">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#9E9E9E">🔍</span>
+        <input type="text" id="proj-search" placeholder="Buscar projeto ou mensajeira..."
+          oninput="renderProjetos()"
+          style="width:100%;padding:8px 14px 8px 34px;border-radius:8px;border:1.5px solid #E0E0E0;font-family:var(--font);font-size:13px;outline:none">
+      </div>
+      <select id="proj-filter-status" onchange="renderProjetos()" class="filter-sel">
+        <option value="">Todos os status</option>
+        <option value="em_andamento">🟡 Em andamento</option>
+        <option value="concluido">✅ Concluído</option>
+        <option value="pausado">⏸️ Pausado</option>
+        <option value="cancelado">❌ Cancelado</option>
+      </select>
+      <select id="proj-filter-tipo" onchange="renderProjetos()" class="filter-sel">
+        <option value="">Todos os tipos</option>
+        <option value="operacional">🏭 Operacional</option>
+        <option value="comercial">💼 Comercial</option>
+        <option value="tecnologia">💻 Tecnologia</option>
+        <option value="treinamento">📚 Treinamento</option>
+        <option value="expansao">📈 Expansão</option>
+        <option value="auditoria">🔍 Auditoria</option>
+      </select>
+    </div>
+
+    <!-- Stats -->
+    <div id="proj-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:18px"></div>
+
+    <!-- Board (tabela) -->
+    <div id="proj-board"></div>
+
+  </div><!-- /.gt-projetos -->
 
 </div>
 
