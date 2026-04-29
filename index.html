@@ -1938,6 +1938,68 @@ const PROJ_SK = 'vini26_projetos_v1';
 let projetos = JSON.parse(localStorage.getItem(PROJ_SK) || '[]');
 let editingProjId = null;
 
+// Seed projetos iniciais
+(function seedProjetos(){
+  const seeds = [
+    {
+      id: 'proj-extend-sd-2026',
+      title: 'Extend SD',
+      ms: 'Premium (todas)',
+      tipo: 'comercial',
+      status: 'em_andamento',
+      resp: 'Vini',
+      inicio: '2026-04-01',
+      prazo: '',
+      desc: 'Projeto para ampliar o horário de corte para sellers com as mensajeiras premium.',
+      passos: 'Mapear horários de corte atuais de cada Premium\nAlinhar viabilidade operacional com cada transportadora\nDefinir novo horário de corte padrão\nComunicar sellers e atualizar plataforma',
+    },
+    {
+      id: 'proj-integracao-driver-2026',
+      title: 'Integração driver y mensajería',
+      ms: 'Vitom Log / Flexboys',
+      tipo: 'tecnologia',
+      status: 'em_andamento',
+      resp: 'Vini',
+      inicio: '2026-04-01',
+      prazo: '',
+      desc: 'Integração entre repartidor e transportista, onde iniciaremos as provas com Vitom e Flexboys, habilitando um QR de registro para ambos e para que seus repartidores possam registrar-se com eles.',
+      passos: 'Iniciar piloto com Vitom e Flexboys\nGerar QR codes de registro por transportadora\nTreinamento dos repartidores no fluxo de registro\nMonitorar adesão e resolver fricções\nExpandir para demais Premium após validação',
+    },
+    {
+      id: 'proj-painel-mlb-mlm-2026',
+      title: 'Painel Mensajeiras MLB-MLM',
+      ms: 'Todas (MLB + MLM)',
+      tipo: 'tecnologia',
+      status: 'em_andamento',
+      resp: 'Vini',
+      inicio: '2026-04-24',
+      prazo: '',
+      desc: 'Novo painel de mensajeiras, onde estamos consolidando todos os nossos processos, comunicados e ações que estamos levando a cabo com todas as transportistas em Flex.',
+      passos: 'Estrutura base do painel (HTML único)\nImportar base de 69 mensajeiras MLB\nAdicionar módulo de Visitas e Agenda\nAdicionar módulo de Plano de Ação ofensoras\nIntegrar filtro MLB / MLM\nPublicar no GitHub Pages',
+    },
+    {
+      id: 'proj-automatizacao-mensagens-2026',
+      title: 'Automatización de mensagens',
+      ms: 'Todas',
+      tipo: 'tecnologia',
+      status: 'em_andamento',
+      resp: 'Vini',
+      inicio: '2026-04-01',
+      prazo: '',
+      desc: 'Estamos tentando automatizar as mensagens, seja por correio eletrônico ou WhatsApp, para ter maior autonomia nas análises e nas ações do dia a dia.',
+      passos: 'Mapear mensagens recorrentes (comunicados, alertas SLA)\nDefinir canal prioritário: e-mail vs WhatsApp\nPrototipar fluxo de automação\nValidar com time antes de escalar',
+    },
+  ];
+  let added = false;
+  seeds.forEach(seed => {
+    if(!projetos.find(p=>p.id===seed.id)){
+      projetos.push(seed);
+      added = true;
+    }
+  });
+  if(added) localStorage.setItem(PROJ_SK, JSON.stringify(projetos));
+})();
+
 function saveProjetos(){ localStorage.setItem(PROJ_SK, JSON.stringify(projetos)); }
 function pjuid(){ return 'pj'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); }
 
