@@ -1682,6 +1682,198 @@ function renderSlaChart(){
   });
 }
 
+
+// ══════════════════════════════════════════════════════
+// GESTÃO AÇÕES + COMUNICADOS RENDER MODULE (restored)
+// ══════════════════════════════════════════════════════
+
+function renderGestaoAcoes(){
+  const board = document.getElementById('ga-board');
+  if(!board) return;
+  const q = (document.getElementById('ga-search')?.value||'').toLowerCase();
+  const filtered = gestaoAcoes.filter(a=>!q||a.title.toLowerCase().includes(q)||(a.resp||'').toLowerCase().includes(q));
+  if(!filtered.length){
+    board.innerHTML = '<div class="v-empty"><div style="font-size:28px;margin-bottom:8px">📋</div><div style="font-weight:800;font-size:15px;margin-bottom:4px">Nenhuma ação registrada</div><p style="font-size:13px">Clique em "+ Adicionar" para registrar uma ação.</p></div>';
+    return;
+  }
+  const statusCfg = {
+    pendente: {bg:'#FFF8DC',color:'#8B6914',icon:'⏳'},
+    andamento:{bg:'#EBF3FF',color:'#1A4DB3',icon:'🔄'},
+    concluida:{bg:'#E6F7EE',color:'#006E35',icon:'✅'},
+    cancelada: {bg:'#FDECEA',color:'#C0392B',icon:'❌'},
+  };
+  board.innerHTML = filtered.map(a=>{
+    const sc = statusCfg[a.status]||statusCfg.pendente;
+    return `<div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px">
+      <div style="width:38px;height:38px;border-radius:10px;background:${sc.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${sc.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+          <div style="font-size:14px;font-weight:800;color:#333">${esc(a.title)}</div>
+          <div style="display:flex;gap:5px;flex-shrink:0">
+            <button onclick="openEditGestaoAcao('${a.id}')" style="background:#F5F5F5;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;font-family:var(--font)">✎</button>
+            <button onclick="deleteGestaoAcao('${a.id}')" style="background:#FDECEA;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:#C0392B;font-family:var(--font)">✕</button>
+          </div>
+        </div>
+        ${a.desc?`<div style="font-size:12px;color:#555;line-height:1.55;margin-bottom:6px">${esc(a.desc)}</div>`:''}
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${sc.bg};color:${sc.color}">${sc.icon} ${a.status||'pendente'}</span>
+          ${a.resp?`<span style="font-size:11px;color:#666">👤 ${esc(a.resp)}</span>`:''}
+          ${a.data?`<span style="font-size:11px;color:#666">📅 ${fmtDate(a.data)}</span>`:''}
+          ${a.prazo?`<span style="font-size:11px;color:#666">⏰ Prazo: ${fmtDate(a.prazo)}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddGestaoAcao(){
+  editingGaId = null;
+  ['ga-title','ga-desc','ga-resp','ga-data','ga-prazo'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  const st = document.getElementById('ga-status');if(st)st.value='pendente';
+  document.getElementById('ga-form-overlay')?.classList.add('open');
+}
+
+function openEditGestaoAcao(id){
+  editingGaId = id;
+  const a = gestaoAcoes.find(x=>x.id===id);
+  if(!a) return;
+  const s = n=>document.getElementById(n);
+  if(s('ga-title')) s('ga-title').value=a.title||'';
+  if(s('ga-desc'))  s('ga-desc').value=a.desc||'';
+  if(s('ga-resp'))  s('ga-resp').value=a.resp||'';
+  if(s('ga-status'))s('ga-status').value=a.status||'pendente';
+  if(s('ga-data'))  s('ga-data').value=a.data||'';
+  if(s('ga-prazo')) s('ga-prazo').value=a.prazo||'';
+  document.getElementById('ga-form-overlay')?.classList.add('open');
+}
+
+function closeGestaoAcao(){ document.getElementById('ga-form-overlay')?.classList.remove('open'); editingGaId=null; }
+
+function saveGestaoAcao(){
+  const title=document.getElementById('ga-title')?.value.trim();
+  if(!title){alert('Preencha o título.');return;}
+  const obj={
+    id:editingGaId||gauid(), title,
+    desc: document.getElementById('ga-desc')?.value.trim()||'',
+    resp: document.getElementById('ga-resp')?.value.trim()||'',
+    status:document.getElementById('ga-status')?.value||'pendente',
+    data: document.getElementById('ga-data')?.value||'',
+    prazo:document.getElementById('ga-prazo')?.value||'',
+  };
+  if(editingGaId){const i=gestaoAcoes.findIndex(x=>x.id===editingGaId);gestaoAcoes[i]=obj;}
+  else gestaoAcoes.unshift(obj);
+  saveGestaoAcoes();
+  closeGestaoAcao();
+  renderGestaoAcoes();
+  showToast('Ação salva!');
+}
+
+function deleteGestaoAcao(id){
+  if(!confirm('Excluir esta ação?')) return;
+  gestaoAcoes = gestaoAcoes.filter(a=>a.id!==id);
+  saveGestaoAcoes();
+  renderGestaoAcoes();
+  showToast('Removida');
+}
+
+// ── COMUNICADOS ──────────────────────────────────────
+function renderComunicados(){
+  const board = document.getElementById('com-board');
+  if(!board) return;
+  const q = (document.getElementById('com-search')?.value||'').toLowerCase();
+  const fd = document.getElementById('com-filter-dest')?.value||'';
+  const filtered = comunicados.filter(c=>{
+    const mq=!q||c.title.toLowerCase().includes(q)||(c.texto||'').toLowerCase().includes(q);
+    const md=!fd||c.dest===fd;
+    return mq&&md;
+  });
+  if(!filtered.length){
+    board.innerHTML='<div class="v-empty"><div style="font-size:28px;margin-bottom:8px">📢</div><div style="font-weight:800;font-size:15px;margin-bottom:4px">Nenhum comunicado registrado</div><p style="font-size:13px">Clique em "+ Adicionar" para registrar um comunicado.</p></div>';
+    return;
+  }
+  const canalIcon={email:'✉️',whatsapp:'📱',reuniao:'🤝',plataforma:'💻'};
+  const destCfg={
+    'Todas':    {bg:'#F5F5F5',color:'#555'},
+    'Premium':  {bg:'#FFF3E8',color:'#A0522D'},
+    'Certifcada':{bg:'#E6F7EE',color:'#006E35'},
+    'Recomenda':{bg:'#EBF3FF',color:'#1A4DB3'},
+  };
+  board.innerHTML = filtered.map(c=>{
+    const dc=destCfg[c.dest]||destCfg['Todas'];
+    const ci=canalIcon[c.canal]||'📋';
+    return `<div style="background:#fff;border:1.5px solid #E0E0E0;border-radius:12px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:800;color:#333;margin-bottom:4px">${esc(c.title)}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${c.data?`<span style="font-size:11px;color:#666">📅 ${fmtDate(c.data)}</span>`:''}
+            ${c.resp?`<span style="font-size:11px;color:#666">👤 ${esc(c.resp)}</span>`:''}
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:${dc.bg};color:${dc.color}">${c.dest||'—'}</span>
+            <span style="font-size:11px;color:#666">${ci} ${c.canal||'—'}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button onclick="openEditComunicado('${c.id}')" style="background:#F5F5F5;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;font-family:var(--font)">✎</button>
+          <button onclick="deleteComunicado('${c.id}')" style="background:#FDECEA;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;color:#C0392B;font-family:var(--font)">✕</button>
+        </div>
+      </div>
+      ${c.texto?`<div style="font-size:12px;color:#555;line-height:1.6;white-space:pre-wrap;background:#F5F5F5;border-radius:8px;padding:10px 12px">${esc(c.texto)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openAddComunicado(){
+  editingComId=null;
+  ['com-title','com-texto','com-resp','com-data'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const d=document.getElementById('com-dest');if(d)d.value='Todas';
+  const c=document.getElementById('com-canal');if(c)c.value='whatsapp';
+  document.getElementById('com-form-overlay')?.classList.add('open');
+}
+
+function openEditComunicado(id){
+  editingComId=id;
+  const c=comunicados.find(x=>x.id===id);if(!c)return;
+  const g=n=>document.getElementById(n);
+  if(g('com-title')) g('com-title').value=c.title||'';
+  if(g('com-texto')) g('com-texto').value=c.texto||'';
+  if(g('com-resp'))  g('com-resp').value=c.resp||'';
+  if(g('com-data'))  g('com-data').value=c.data||'';
+  if(g('com-dest'))  g('com-dest').value=c.dest||'Todas';
+  if(g('com-canal')) g('com-canal').value=c.canal||'whatsapp';
+  document.getElementById('com-form-overlay')?.classList.add('open');
+}
+
+function closeComunicado(){ document.getElementById('com-form-overlay')?.classList.remove('open'); editingComId=null; }
+
+function saveComunicado(){
+  const title=document.getElementById('com-title')?.value.trim();
+  if(!title){alert('Preencha o título.');return;}
+  const obj={
+    id:editingComId||('com-'+Date.now().toString(36)), title,
+    texto:document.getElementById('com-texto')?.value.trim()||'',
+    resp: document.getElementById('com-resp')?.value.trim()||'',
+    data: document.getElementById('com-data')?.value||'',
+    dest: document.getElementById('com-dest')?.value||'Todas',
+    canal:document.getElementById('com-canal')?.value||'whatsapp',
+  };
+  if(editingComId){const i=comunicados.findIndex(x=>x.id===editingComId);comunicados[i]=obj;}
+  else comunicados.unshift(obj);
+  saveComunicados();
+  closeComunicado();
+  renderComunicados();
+  showToast('Comunicado salvo!');
+}
+
+function deleteComunicado(id){
+  if(!confirm('Excluir este comunicado?')) return;
+  comunicados=comunicados.filter(c=>c.id!==id);
+  saveComunicados();
+  renderComunicados();
+  showToast('Removido');
+}
+
 // ══════════════════════════════════════════════════════
 // SITE SWITCHER — Visual only, MLB/MLM separate storage
 // ══════════════════════════════════════════════════════
