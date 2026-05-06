@@ -386,6 +386,16 @@ header{background:var(--yellow);padding:0 24px;height:56px;display:flex;align-it
         <div class="t-stat"><div class="t-stat-n" style="color:#E8A020">35k</div><div class="t-stat-l">Env/dia</div></div>
       </div>
     </div>
+    <div class="t-card" onclick="selectTransp('fbx')" id="tc-fbx">
+      <div class="t-card-bar" style="background:#E30613"></div>
+      <div class="t-card-icon">🔴</div>
+      <div class="t-card-name">Flex Boys</div>
+      <div class="t-card-sub">Flex Boys Transportes · SP</div>
+      <div class="t-card-stats">
+        <div class="t-stat"><div class="t-stat-n" id="fbx-nv">0</div><div class="t-stat-l">Visitas</div></div>
+        <div class="t-stat"><div class="t-stat-n" id="fbx-np">0</div><div class="t-stat-l">Fotos</div></div>
+      </div>
+    </div>
   </div>
 
   <!-- Filtro visitas por período -->
@@ -2004,7 +2014,7 @@ const MENSAJEIRAS = [
     "logo": ""
   }
 ];
-const TRANSP_TO_MS = {"ag": "AG Log\u00edstica Express", "ln": "LN Transporte & Log\u00edstica", "gon": null, "wa": "W.A Flex Transporte Express", "rnd": "RND"};
+const TRANSP_TO_MS = {"ag": "AG Log\u00edstica Express", "ln": "LN Transporte & Log\u00edstica", "gon": null, "wa": "W.A Flex Transporte Express", "rnd": "RND", "fbx": null};
 
 let msFilterCat = '';
 
@@ -2266,6 +2276,22 @@ function closeTranspDetail(){ document.getElementById('transp-detail-overlay').c
 // ══════════════════════════════════════════════════════
 const VSK = 'vini26_visitas_v7';
 visitas = JSON.parse(localStorage.getItem(VSK) || '[]');
+(function seedFlexBoys(){
+  const SEED_ID = 'seed_fbx_20260505';
+  if(visitas.some(v=>v.id===SEED_ID)) return;
+  visitas.unshift({
+    id: SEED_ID,
+    transp: 'fbx',
+    title: 'Visita Operacional – Flex Boys',
+    date: '2026-05-05',
+    resp: 'Vinicius',
+    cat: 'operacional',
+    notes: 'Visita realizada à transportadora Flex Boys para análise dos pontos de projeção da operação e novas oportunidades de negócios com o Mercado Livre. A empresa planeja inaugurar um novo galpão a 100 metros do atual, destinado exclusivamente a rotas segmentadas por zona de entrega — estratégia que visa aumentar a agilidade na saída e aprimorar a gestão dos pacotes. Recentemente, a Flex Boys contratou supervisores de RH e CX, e conta com um profissional dedicado ao desenvolvimento de um sistema próprio de atendimento.',
+    links: [],
+    fotos: []
+  });
+  localStorage.setItem('vini26_visitas_v7', JSON.stringify(visitas));
+})();
 selectedTransp = null;
 let fotoList = [], fotoLabels = [], fotoIdx = 0;
 editingVisitaId = null;
@@ -2276,6 +2302,7 @@ const TRANSP_CFG = {
   gon: {name:'GONCARGAS',     color:'#FF7733', icon:'🟠'},
   wa:  {name:'Wa Flex',       color:'#9B59B6', icon:'🟣'},
   rnd: {name:'RND',           color:'#E8A020', icon:'🟡'},
+  fbx: {name:'Flex Boys',     color:'#E30613', icon:'🔴'},
 };
 const CAT_CFG_V = {
   operacional:{icon:'🏭',label:'Operacional',bg:'#EBF3FF',color:'#1A4DB3'},
