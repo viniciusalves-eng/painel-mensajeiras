@@ -396,6 +396,17 @@ header{background:var(--yellow);padding:0 24px;height:56px;display:flex;align-it
         <div class="t-stat"><div class="t-stat-n" id="fbx-np">0</div><div class="t-stat-l">Fotos</div></div>
       </div>
     </div>
+    <div class="t-card" onclick="selectTransp('snf')" id="tc-snf">
+      <div class="t-card-bar" style="background:#1A1A2E"></div>
+      <div class="t-card-icon">⚡</div>
+      <div class="t-card-name">Sonic Flex</div>
+      <div class="t-card-sub">Sonic · SP</div>
+      <div class="t-card-stats">
+        <div class="t-stat"><div class="t-stat-n" id="snf-nv">0</div><div class="t-stat-l">Visitas</div></div>
+        <div class="t-stat"><div class="t-stat-n" id="snf-np">0</div><div class="t-stat-l">Fotos</div></div>
+        <div class="t-stat"><div class="t-stat-n" style="color:#1A1A2E">75k</div><div class="t-stat-l">Pcts/dia</div></div>
+      </div>
+    </div>
   </div>
 
   <!-- Filtro visitas por período -->
@@ -2014,7 +2025,7 @@ const MENSAJEIRAS = [
     "logo": ""
   }
 ];
-const TRANSP_TO_MS = {"ag": "AG Log\u00edstica Express", "ln": "LN Transporte & Log\u00edstica", "gon": null, "wa": "W.A Flex Transporte Express", "rnd": "RND", "fbx": null};
+const TRANSP_TO_MS = {"ag": "AG Log\u00edstica Express", "ln": "LN Transporte & Log\u00edstica", "gon": null, "wa": "W.A Flex Transporte Express", "rnd": "RND", "fbx": null, "snf": "Sonic"};
 
 let msFilterCat = '';
 
@@ -2292,6 +2303,36 @@ visitas = JSON.parse(localStorage.getItem(VSK) || '[]');
   });
   localStorage.setItem('vini26_visitas_v7', JSON.stringify(visitas));
 })();
+(function seedSonicFlex(){
+  const SEED_ID = 'seed_snf_20260507';
+  if(visitas.some(v=>v.id===SEED_ID)) return;
+  visitas.unshift({
+    id: SEED_ID,
+    transp: 'snf',
+    title: 'Visita Operacional – Sonic Flex',
+    date: '2026-05-07',
+    resp: 'Vinicius',
+    cat: 'operacional',
+    notes: `Visita realizada à Sonic Flex para análise da operação e mapeamento de oportunidades com o Mercado Livre.
+
+📦 VOLUME E CONTAS
+A operação movimenta cerca de 75.000 pacotes por dia. A empresa possui 18 contas ativas no Mercado Livre, das quais 13 ultrapassam 2 milhões de pacotes movimentados por mês.
+
+🚗 ESTRUTURA DE ENTREGA
+Gerenciam uma base de aproximadamente 1.500 entregadores, com suporte de 200 veículos para as entregas. A Sonic é a única transportadora que realiza a gestão integral das regiões de entrega, divididas em 12 zonas. Para cada região, é contratada uma empresa de gestão terceirizada — a Sonic não executa as entregas diretamente.
+
+💰 MODELO FINANCEIRO
+Cobrança: R$ 10,00/pacote para Mercado Livre · R$ 13,00/pacote para sellers avulsos.
+Repasse: R$ 6,65 ao coordenador regional ("condenador"), que repassa R$ 6,00 por pacote aos entregadores.
+
+🏗️ PROJETOS EM ANDAMENTO
+1. Modelo de Estoque Full: iniciando operação de fulfillment para atrair vendedores e grandes marcas a armazenar produtos no estoque da Sonic.
+2. Sistema Próprio (previsão 2027): desenvolvimento de plataforma própria de TMS e WMS para assumir toda a gestão tecnológica da operação.`,
+    links: [],
+    fotos: []
+  });
+  localStorage.setItem('vini26_visitas_v7', JSON.stringify(visitas));
+})();
 selectedTransp = null;
 let fotoList = [], fotoLabels = [], fotoIdx = 0;
 editingVisitaId = null;
@@ -2303,6 +2344,7 @@ const TRANSP_CFG = {
   wa:  {name:'Wa Flex',       color:'#9B59B6', icon:'🟣'},
   rnd: {name:'RND',           color:'#E8A020', icon:'🟡'},
   fbx: {name:'Flex Boys',     color:'#E30613', icon:'🔴'},
+  snf: {name:'Sonic Flex',    color:'#1A1A2E', icon:'⚡'},
 };
 const CAT_CFG_V = {
   operacional:{icon:'🏭',label:'Operacional',bg:'#EBF3FF',color:'#1A4DB3'},
